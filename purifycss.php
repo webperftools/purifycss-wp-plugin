@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Remove unused CSS and reduce the total web page load time. You can add the clean CSS manually or use the PurifyCSS API.
  *
@@ -8,48 +7,34 @@
  * registers the activation and deactivation functions, and defines a function
  * that starts the plugin.
  *
- * @link              https://www.webperftools.com/wordpress-plugin-purifycss
+ * @link              https://www.webperftools.com/purifycss/purifycss-wordpress-plugin/
  * @since             1.0.0
  * @package           Purifycss
  *
  * @wordpress-plugin
  * Plugin Name:       PurifyCSS
- * Plugin URI:        https://www.webperftools.com/wordpress-plugin-purifycss
+ * Plugin URI:        https://www.webperftools.com/purifycss/purifycss-wordpress-plugin/
  * Description:       Remove unused CSS and reduce the total web page load time. You can add the clean CSS manually or use the PurifyCSS API.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Author:            Webperftools
- * Author URI:        https://purifycss.online/license
+ * Author URI:        https://www.peterbagi.de/
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain:       purifycss
  * Domain Path:       /languages
  */
 
-// If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-/**
- * Currently plugin version.
- * Start at version 1.0.0 and use SemVer - https://semver.org
- * Rename this for your plugin and update it as you release new versions.
- */
-define( 'PURIFYCSS_VERSION', '1.0.0' );
+define( 'PURIFYCSS_VERSION', '1.0.1' );
 
-/**
- * The code that runs during plugin activation.
- * This action is documented in includes/class-purifycss-activator.php
- */
 function activate_purifycss() {
 	require_once plugin_dir_path( __FILE__ ) . 'includes/class-purifycss-activator.php';
 	Purifycss_Activator::activate();
 }
 
-/**
- * The code that runs during plugin deactivation.
- * This action is documented in includes/class-purifycss-deactivator.php
- */
 function deactivate_purifycss() {
 	require_once plugin_dir_path( __FILE__ ) . 'includes/class-purifycss-deactivator.php';
 	Purifycss_Deactivator::deactivate();
@@ -58,10 +43,6 @@ function deactivate_purifycss() {
 register_activation_hook( __FILE__, 'activate_purifycss' );
 register_deactivation_hook( __FILE__, 'deactivate_purifycss' );
 
-/**
- * The core plugin class that is used to define internationalization,
- * admin-specific hooks, and public-facing site hooks.
- */
 require plugin_dir_path( __FILE__ ) . 'includes/class-purifycss.php';
 
 /**
@@ -82,8 +63,7 @@ function run_purifycss() {
 }
 run_purifycss();
 
-// Добавим ссылку на страницу настроек в таблицу плагинов
-function plugin_settings_link($links) { 
+function plugin_settings_link($links) {
 	$settings_link = '<a href="options-general.php?page=purifycss-plugin">'.__('Settings').'</a>'; 
 	array_unshift( $links, $settings_link ); 
 	return $links; 

@@ -1,0 +1,15 @@
+Issues:
+DONE Not working with Divi
+DONE Not working with Autoptimize
+
+
+
+o One optimized file per URL
+
+TODO show results as one item per css file
+
+
+
+
+
+
