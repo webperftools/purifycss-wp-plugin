@@ -33,12 +33,12 @@ class PurifycssHelper {
      */
     public static $inline_style = 'inline.css';
 
-	/**
-	 * save css to file with versionized
-	 *
-	 * @since    1.0.0
-	 */
-	static public function save_css($content) {
+    /**
+     * save css to file with versionized
+     *
+     * @since    1.0.0
+     */
+    static public function save_css($content) {
         // copy exists file to timestamp copy
         // self::$folder
         // self::$style
@@ -54,11 +54,11 @@ class PurifycssHelper {
         file_put_contents($file, $content);
 
         // store to db
-        update_option( 'purifycss_css', $content );
+        // update_option( 'purifycss_css', $content );
 
         return;
     }
-    
+
     /**
      * Get css file content
      *
@@ -82,6 +82,7 @@ class PurifycssHelper {
     public static function is_enabled() {
         if (self::force_enabled()) return true;
         if (self::force_disabled()) return false;
+        // if (is_admin()) return false;
 
         if (self::check_test_mode()) return true;
         if (self::check_live_mode()) return true;
@@ -117,7 +118,7 @@ class PurifycssHelper {
     /**
      * get path to css file
      *
-     * @return void
+     * @return string $file
      */
     static public function get_css_file(){
         $file = plugin_dir_url( ( __FILE__ ) ).'../' . self::$folder.self::$style ;
@@ -143,7 +144,7 @@ class PurifycssHelper {
      */
     static public function check_test_mode(){
         if(!function_exists('wp_get_current_user')) {
-            include(ABSPATH . "wp-includes/pluggable.php"); 
+            include(ABSPATH . "wp-includes/pluggable.php");
         }
 
         $cur_user = wp_get_current_user();
@@ -161,7 +162,7 @@ class PurifycssHelper {
      * @return void
      */
     static public function save_css_to_db($css){
-        global $wpdb;   
+        global $wpdb;
         $table_name = $wpdb->prefix . "purifycss";
         // clean db
         $wpdb->query("TRUNCATE TABLE $table_name");
@@ -190,11 +191,16 @@ class PurifycssHelper {
             $filename = md5($css_identifier.uniqid()).'.css';
 
             $_obj = apply_filters('purifycss_before_filesave', $_obj);
-            file_put_contents( plugin_dir_path( dirname( __FILE__ ) ) . self::$folder.$filename , $_obj['purified']['content']);
+
+            $cssContent = $_obj['purified']['content'];
+            if (isset($_obj['url'])) {
+                $cssContent = self::fix_relative_paths($cssContent, $_obj['url']);
+            }
+            file_put_contents( plugin_dir_path( dirname( __FILE__ ) ) . self::$folder.$filename , $cssContent);
 
             $todb[] = [
                 'orig_css' => $css_identifier,
-                'css'      => '../' . self::$folder.$filename
+                'css'      => 'generatedcss/'.$filename
             ];
 
         }
@@ -217,6 +223,17 @@ class PurifycssHelper {
 
     static public function get_css_id_by_content($content) {
         return substr(trim(preg_replace('/\s+/', ' ', $content)), 0, 100);
+    }
+
+    public static function fix_relative_paths($cssContent, $url) {
+        $path = dirname($url)."/";
+
+        $search = '#url\((?!\s*[\'"]?(?:https?:)?//)\s*([\'"])?#';
+        $replace = "url($1{$path}";
+        $cssContent = preg_replace($search, $replace, $cssContent);
+
+        return $cssContent;
+
     }
 
 }

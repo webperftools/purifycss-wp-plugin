@@ -43,7 +43,7 @@ class Purifycss_Public {
     /**
      * @var file mapping between original and purified css from DB (cached)
      */
-    private $files;
+    public $files;
 
     /**
 	 * Initialize the class and set its properties.
@@ -57,7 +57,37 @@ class Purifycss_Public {
 		$this->plugin_name = $plugin_name;
 		$this->version = $version;
 
+        global $wpdb;
+        $table_name = $wpdb->prefix . "purifycss";
+
+        $files = array();
+        $res = $wpdb->get_results( "SELECT orig_css, css from $table_name;" );
+        foreach($res as $file) {
+
+            $file->css = plugin_dir_url( ( __FILE__ ) ).$file->css;
+            $files[] = $file;
+        }
+        $this->files = $files;
+
 	}
+
+
+    /**
+     * remove styles in site
+     * used only in manual css
+     *
+     * @return void
+     */
+    function remove_all_styles(){
+        $this->replace_all_styles(false);
+
+    }
+
+
+    function enqueue_purified_css_file() {
+        wp_enqueue_style('styles_purified', PurifycssHelper::get_css_file(), false, false, 'all' );
+
+    }
 
 	/**
 	 * dequeue styles in site
@@ -65,13 +95,11 @@ class Purifycss_Public {
 	 *
 	 * @return void
 	 */
-	function dequeue_all_styles() {
+	function replace_all_styles($replace = true) {
 		global $wp_styles;
 		global $wpdb;   
 		$table_name = $wpdb->prefix . "purifycss";
 		$need_to_enc = [];
-
-		$this->debug_enqueued_styles();
 
         foreach( $wp_styles->queue as $style ) {
 
@@ -86,6 +114,13 @@ class Purifycss_Public {
             if (isset($_GET['keep']) && in_array($wp_styles->registered[$style]->handle,explode(",",$_GET['keep']))) {
                 continue;
             }
+
+/*            if (!$replace) {
+                wp_dequeue_style($wp_styles->registered[$style]->handle);
+
+                continue;
+            }*/
+
 
 
             $src = $wp_styles->registered[$style]->src;
@@ -122,7 +157,21 @@ class Purifycss_Public {
                 }
             }
         }
+
 	}
+
+	public function replace_styles($url) {
+
+	    if (isset($_GET['purifydebug'])) {
+	        echo "<pre>";
+            print_r($url);echo "\n";
+            print_r($this->get_matching_file($url));
+            echo "</pre>";
+        }
+
+	    return $url;
+    }
+
 
     /**
      * maps original css to purified css from db table
@@ -145,6 +194,32 @@ class Purifycss_Public {
         return false;
     }
 
+
+    public function return_empty($arg) {
+	    return "";
+    }
+
+    public function before_wp_print_styles() {
+        ob_start();
+    }
+
+    public function after_wp_print_styles() {
+        $wpHTML = ob_get_clean();
+    }
+
+    public function debug_hooks() {
+	    $this->print_filters_for('wp_print_styles');
+    }
+
+    public function print_filters_for( $hook = '' ) {
+        global $wp_filter;
+        if( empty( $hook ) || !isset( $wp_filter[$hook] ) )
+            return;
+
+        print '<pre style="font-size:11px; color:black; line-height:1; font-weight:600">';
+        print_r( $wp_filter[$hook] );
+        print '</pre>';
+    }
 
     public function debug_enqueued_styles() {
         global $wp_styles;

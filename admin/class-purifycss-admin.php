@@ -106,7 +106,7 @@ class Purifycss_Admin {
 
 		// check license key
 		if ( $key =='' ){
-			$msg = __("Invalid licanse key. Please enter verifed license",'purifycss');
+			$msg = __("Invalid license key. Please enter verified license",'purifycss');
 			wp_send_json([ 'status'=>'ERR','msg'=>$msg,'resmsg'=>'error' ]);
 		}
 
@@ -364,21 +364,10 @@ class Purifycss_Admin {
 	 * @since    1.0.0
 	 */
 	public function enqueue_styles() {
-
-		/**
-		 * This function is provided for demonstration purposes only.
-		 *
-		 * An instance of this class should be passed to the run() function
-		 * defined in Purifycss_Loader as all of the hooks are defined
-		 * in that particular class.
-		 *
-		 * The Purifycss_Loader will then create the relationship
-		 * between the defined hooks and the functions defined in this
-		 * class.
-		 */
+        $wpScreen = get_current_screen();
+        if ($wpScreen->id != "settings_page_purifycss-plugin") return;
 
 		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/purifycss-admin.css', array(), $this->version, 'all' );
-
 	}
 
 	/**
@@ -387,21 +376,18 @@ class Purifycss_Admin {
 	 * @since    1.0.0
 	 */
 	public function enqueue_scripts() {
+	    $wpScreen = get_current_screen();
+	    if ($wpScreen->id != "settings_page_purifycss-plugin") return;
 
-		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/purifycss-admin.js', array( 'jquery' ), $this->version, false );
+        $settings_html = wp_enqueue_code_editor( array( 'type' => 'text/html' ) );
+        $settings_css  = wp_enqueue_code_editor( array( 'type' => 'text/css' ) );
 
+        wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/purifycss-admin.js', array( 'jquery', 'code-editor' ), $this->version, true );
 
-		// подключаем редактор кода для HTML.
-		$settings_html = wp_enqueue_code_editor( array( 'type' => 'text/html' ) );
-		$settings_css  = wp_enqueue_code_editor( array( 'type' => 'text/css' ) );
-
-		// ничего не делаем если CodeMirror отключен.
 		if ( false === $settings_html ) {
 			return;
 		}
 
-
-		// html text code editor params
 		wp_localize_script( $this->plugin_name, 'customhtml_text_param', $settings_html  );
 		
 	}
