@@ -1,12 +1,18 @@
 Issues:
 DONE Not working with Divi
 DONE Not working with Autoptimize
-
+DONE test with W3 Total Cache
 
 
 o One optimized file per URL
 
 TODO show results as one item per css file
+TODO implement self update from wordpress
+   follow Divi Theme ET_Core_Updates class
+      add_filter( 'pre_set_site_transient_update_themes', array( $this, 'check_themes_updates' ) );
+
+
+TODO W3 Total Cache - maybe clear cache after purify enabled?
 
 
 

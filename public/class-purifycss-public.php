@@ -79,7 +79,7 @@ class Purifycss_Public {
      * @return void
      */
     function remove_all_styles(){
-        $this->replace_all_styles(false);
+        $this->replace_all_styles();
 
     }
 
@@ -95,7 +95,11 @@ class Purifycss_Public {
 	 *
 	 * @return void
 	 */
-	function replace_all_styles($replace = true) {
+	function replace_all_styles() {
+
+        $skip = apply_filters('purifycss_skip_replace_link_styles', false);
+        if ($skip) return;
+
 		global $wp_styles;
 		global $wpdb;   
 		$table_name = $wpdb->prefix . "purifycss";
@@ -114,14 +118,6 @@ class Purifycss_Public {
             if (isset($_GET['keep']) && in_array($wp_styles->registered[$style]->handle,explode(",",$_GET['keep']))) {
                 continue;
             }
-
-/*            if (!$replace) {
-                wp_dequeue_style($wp_styles->registered[$style]->handle);
-
-                continue;
-            }*/
-
-
 
             $src = $wp_styles->registered[$style]->src;
             $files = $wpdb->get_results( "SELECT css from $table_name WHERE  `orig_css` LIKE '%$src%' ;" );
@@ -224,7 +220,7 @@ class Purifycss_Public {
     public function debug_enqueued_styles() {
         global $wp_styles;
 
-        if (isset($_GET['purifydebug']) && $_GET['purifydebug']=1) {
+        if (PurifycssHelper::is_debug()) {
             echo "<table style='font-size:11px;line-height:1;background:white;color:black;border: 1px solid black;margin: 10px;'>";
             foreach( $wp_styles->queue as $style ) {
                 if (strpos($style, 'purified') != false) continue;
@@ -274,6 +270,9 @@ class Purifycss_Public {
      * @return void
      */
     public function end_html_buffer(){
+
+        $skip = apply_filters('purifycss_skip_replace_inline_styles', false);
+        if ($skip) return;
 
         global $wpdb;
         global $wp_styles;

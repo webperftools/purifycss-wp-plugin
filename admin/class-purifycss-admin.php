@@ -194,8 +194,12 @@ class Purifycss_Admin {
 				if ( isset($_rsp['response']['message']) ){
 					$msg    = $_rsp['response']['message'];
 					$resmsg = $_rsp['response']['message'];
-				}else{
-					$msg    =  $resmsg = "error";
+				} else{
+					$msg = $_rsp['error'];
+					if (isset($_rsp['while'])) {
+					    $msg .= '<br>while '.$_rsp['while'];
+                    }
+					$resmsg = $msg;
 				}
 			}else{
 				$result = true;
@@ -207,7 +211,7 @@ class Purifycss_Admin {
 				PurifycssHelper::save_css_to_db( $_rsp['css'] );
 				$percentage = round((($_rsp['results']['stats']['beforeBytes']-$_rsp['results']['stats']['afterBytes'])/$_rsp['results']['stats']['beforeBytes'])*100);
 				// calc percentage
-				$resmsg = '<b>'.$_rsp['results']['stats']['afterBytes']
+				$resmsg = '<b>'.$_rsp['results']['stats']['removed']
 							   .' ('.$percentage.'%)</b> '
 							   .__('of your CSS has been cleaned up','purifycss');
 

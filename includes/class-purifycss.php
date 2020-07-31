@@ -65,6 +65,14 @@ class Purifycss {
 	 * @var      string    $version    The current version of the plugin.
 	 */
 	protected $version;
+	/**
+	 * The current version of the plugin.
+	 *
+	 * @since    1.0.0
+	 * @access   protected
+	 * @var      string    $latest_version    The latest version of the plugin.
+	 */
+	protected $latest_version;
 
 	/**
 	 * Define the core functionality of the plugin.
@@ -165,7 +173,10 @@ class Purifycss {
 		$this->loader->add_action( 'wp_ajax_purifycss_getcss',$plugin_admin, 'actionGetCSS' );
 		$this->loader->add_action( 'wp_ajax_purifycss_savecss',$plugin_admin, 'actionSaveCSS' );
 
-	}
+
+        add_filter( 'pre_set_site_transient_update_plugins', array( $this, 'check_plugins_updates' ) );
+
+    }
 
 	/**
 	 * Register all of the hooks related to the public-facing functionality
@@ -176,7 +187,7 @@ class Purifycss {
 	 */
 	private function define_public_hooks() {
 
-		$this->loader->add_action( 'wp_enqueue_scripts', $this->public, 'enqueue_scripts' );
+		//$this->loader->add_action( 'wp_enqueue_scripts', $this->public, 'enqueue_scripts' );
 
 		// add filter to remove inline styles
 		if ( PurifycssHelper::is_enabled() ){
@@ -184,11 +195,12 @@ class Purifycss {
             $this->loader->add_action( 'wp_print_styles', $this->public, 'before_wp_print_styles', 0);
             $this->loader->add_action( 'wp_print_styles', $this->public, 'after_wp_print_styles', PHP_INT_MAX);
 
+
             $usingAPI = true; // TODO enable using the plugin without API license
             if ($usingAPI) {
                 $this->loader->add_action( 'wp_print_styles', $this->public, 'replace_all_styles', PHP_INT_MAX - 1 );
             } else {
-                $this->loader->add_action( 'wp_print_styles', $this->public, 'remove_all_styles', PHP_INT_MAX - 1 );
+                $this->loader->add_action( 'wp_print_styles', $this->public, 'replace_all_styles', PHP_INT_MAX - 1 );
                 $this->loader->add_action( 'wp_print_styles', $this->public, 'enqueue_purified_css_file', PHP_INT_MAX - 1 );
             }
 
@@ -266,4 +278,79 @@ class Purifycss {
 
     }
 
+
+
+    public function check_plugins_updates($update_transient) {
+        global $wp_version;
+
+        if ( ! isset( $update_transient->response ) ) {
+            return $update_transient;
+        }
+
+        if ($this->update_available()) {
+            $dummyObject = (object) array(
+                "id" => "purifycss/purifycss",
+                "slug" => "purifycss",
+                "plugin" => "purifycss/purifycss.php",
+                "new_version" => $this->latest_version,
+                "url" => "https://www.webperftools.com/purifycss/purifycss-worpdress-plugin/",
+                "package" => "https://www.webperftools.com/dist/purifycss.zip",
+                "icons" => array(
+                    "2x" => "https://ps.w.org/custom-facebook-feed/assets/icon-256x256.png?rev=2313063",
+                    "1x" => "https://ps.w.org/custom-facebook-feed/assets/icon-128x128.png?rev=2313063"
+                ),
+                "banners" => array(
+                    "2x" => "https://ps.w.org/custom-facebook-feed/assets/banner-1544x500.png?rev=2313063",
+                    "1x" => "https://ps.w.org/custom-facebook-feed/assets/banner-772x250.png?rev=2137679"
+                ),
+                "banners_rtl" => array(),
+                "tested" => $this->version,
+                "requires_php" => "5.2",
+                "compatibility" => array()
+            );
+
+
+            // TODO: continue here
+            // $update_transient->response['purifycss/purifycss.php'] = $dummyObject;
+        }
+
+        return $update_transient;
+    }
+
+    private function update_available() {
+        $latest_version = file_get_contents('https://www.webperftools.com/dist/purifycss-latest-version.txt');
+        $semver = explode('.',trim($latest_version));
+        if (count($semver) !== 3) return false;
+        if (!is_numeric($semver[2])) return false;
+
+
+        $this->latest_version = $latest_version;
+
+        return $this->latest_version !== $this->version;
+    }
+
 }
+
+/*
+[custom-facebook-feed/custom-facebook-feed.php] => stdClass Object (
+    [id] => w.org/plugins/custom-facebook-feed
+    [slug] => custom-facebook-feed
+    [plugin] => custom-facebook-feed/custom-facebook-feed.php
+    [new_version] => 2.15.1
+    [url] => https://wordpress.org/plugins/custom-facebook-feed/
+    [package] => https://downloads.wordpress.org/plugin/custom-facebook-feed.2.15.1.zip
+    [icons] => Array(
+            [2x] => https://ps.w.org/custom-facebook-feed/assets/icon-256x256.png?rev=2313063
+            [1x] => https://ps.w.org/custom-facebook-feed/assets/icon-128x128.png?rev=2123286
+        )
+
+    [banners] => Array(
+            [2x] => https://ps.w.org/custom-facebook-feed/assets/banner-1544x500.png?rev=2313063
+            [1x] => https://ps.w.org/custom-facebook-feed/assets/banner-772x250.png?rev=2137679
+        )
+    [banners_rtl] => Array()
+    [tested] => 5.4.2
+    [requires_php] => 5.2
+    [compatibility] => stdClass Object()
+
+)*/

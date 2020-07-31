@@ -42,7 +42,12 @@ class PurifycssHelper {
         // copy exists file to timestamp copy
         // self::$folder
         // self::$style
-        $file = plugin_dir_path( dirname( __FILE__ ) ) . self::$folder.self::$style ;
+
+        if (!is_dir(plugin_dir_path( dirname( __FILE__ ) ) . self::$folder)) {
+            mkdir(plugin_dir_path( dirname( __FILE__ ) ) . self::$folder);
+        }
+
+        $file = plugin_dir_path( dirname( __FILE__ ) ) . self::$folder . self::$style ;
         if ( file_exists( $file ) ){
             $newfile = plugin_dir_path( dirname( __FILE__ ) ) . self::$folder.uniqid().'_'.self::$style ;
             copy($file, $newfile);
@@ -234,6 +239,10 @@ class PurifycssHelper {
 
         return $cssContent;
 
+    }
+
+    public static function is_debug(){
+        return isset($_GET['purifydebug']) && $_GET['purifydebug']=1;
     }
 
 }
