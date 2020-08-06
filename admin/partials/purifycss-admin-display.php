@@ -11,6 +11,7 @@
  * @package    Purifycss
  * @subpackage Purifycss/admin/partials
  */
+
 ?>
 
 <div class="purifycss-body">
@@ -47,14 +48,38 @@
         </div>
 
         <p>
-            <button class="button button-primary " id="css_button"><?=__('Get clean CSS code','purifycss')?></button> 
+            <button class="button button-primary mr-3 " id="css_button"><?=__('Get clean CSS code','purifycss')?></button>
+            <?php
+            if (function_exists('w3tc_config')) {
+                $w3tc_config = w3tc_config();
+                if ($w3tc_config->get_boolean('pgcache.enabled', false)) {
+                    echo "  Note: This will also purge your W3 Total Cache page cache.";
+                }
+            }
+            ?>
         </p>
+
+       <div class="crawl-summary"></div>
 
         <p class="result-block <?=get_option('purifycss_resultdata')!=''?'':'d-none'?>"><?=__('Result:','purifycss')?> <?=get_option('purifycss_resultdata')?> </p>
 
-        <p><?=__('Clean CSS code:','purifycss')?></p>
-
-        <textarea class="css_editor" name="" id="purified_css" cols="100" rows="10"><?=PurifycssHelper::get_css();?></textarea>
+       <div class="editor-container" style="display:none">
+          <p><?=__('Clean CSS code:','purifycss')?></p>
+         <textarea class="css_editor" name="" id="purified_css" cols="100" rows="10"><?=PurifycssHelper::get_css();?></textarea>
+       </div>
+       <div class="file-mapping-container">
+          <?php foreach (PurifycssHelper::get_css_files_mapping() as $key => $mapping) {?>
+              <div class="purified-result-item">
+                 <a href='<?=$mapping->orig_css;?>'><?=$mapping->orig_css;?></a><br>
+                 &middot; clean css file: <a target="_blank" href='<?=$mapping->css;?>'><?=$mapping->css_filename;?></a><br>
+                 &middot; <span style="display:inline-block;padding-right: 15px;">before: <strong><?=$mapping->before;?></strong></span>
+                 <span style="display:inline-block;padding-right: 15px;">after: <strong><?=$mapping->after;?></strong> </span>
+                 <span style="display:inline-block;padding-right: 15px;">used: <strong><?=$mapping->used;?></strong> </span>
+                 <span style="display:inline-block;padding-right: 15px;">unused: <strong><?=$mapping->unused;?></strong> </span>
+                 <br>
+               </div>
+          <?php } ?>
+       </div>
     </div>
 
     <p>

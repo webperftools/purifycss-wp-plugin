@@ -89,13 +89,19 @@ class Purifycss {
 		} else {
 			$this->version = '1.0.0';
 		}
+
+	/*	$cache_folder_name = 'generatedcss';
+		if (!defined('PURIFYCSS_CACHEDIR_URL')) {define('PURIFYCSS_CACHEDIR_URL', );}
+		if (!defined('PURIFYCSS_CACHEDIR_PATH')) {define('PURIFYCSS_CACHEDIR_PATH', );}
+	*/
+
+
 		$this->plugin_name = 'purifycss';
 
         $this->load_dependencies();
 
 		$this->public = new Purifycss_Public( $this->get_plugin_name(), $this->get_version() );
 
-		$this->set_locale();
 		$this->define_admin_hooks();
 		$this->define_public_hooks();
 
@@ -107,7 +113,6 @@ class Purifycss {
 	 * Include the following files that make up the plugin:
 	 *
 	 * - Purifycss_Loader. Orchestrates the hooks of the plugin.
-	 * - Purifycss_i18n. Defines internationalization functionality.
 	 * - Purifycss_Admin. Defines all hooks for the admin area.
 	 * - Purifycss_Public. Defines all hooks for the public side of the site.
 	 *
@@ -118,30 +123,14 @@ class Purifycss {
 	 * @access   private
 	 */
 	private function load_dependencies() {
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-purifycss-loader.php';
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-purifycss-i18n.php';
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-purifycss-admin.php';
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-purifycss-public.php';
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-purifycss-helper.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/PurifycssLoader.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/PurifycssDb.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/Purifycss_Admin.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/Purifycss_Updater.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/Puriycss_Public.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/PurifycssHelper.php';
 
 		$this->loader = new Purifycss_Loader();
-	}
-
-	/**
-	 * Define the locale for this plugin for internationalization.
-	 *
-	 * Uses the Purifycss_i18n class in order to set the domain and to register the hook
-	 * with WordPress.
-	 *
-	 * @since    1.0.0
-	 * @access   private
-	 */
-	private function set_locale() {
-
-		$plugin_i18n = new Purifycss_i18n();
-
-		$this->loader->add_action( 'plugins_loaded', $plugin_i18n, 'load_plugin_textdomain' );
-
 	}
 
 	/**
@@ -154,6 +143,7 @@ class Purifycss {
 	private function define_admin_hooks() {
 
 		$plugin_admin = new Purifycss_Admin( $this->get_plugin_name(), $this->get_version() );
+        $plugin_updater = new Purifycss_Updater( $this->get_plugin_name(), $this->get_version() );
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
@@ -174,7 +164,7 @@ class Purifycss {
 		$this->loader->add_action( 'wp_ajax_purifycss_savecss',$plugin_admin, 'actionSaveCSS' );
 
 
-        add_filter( 'pre_set_site_transient_update_plugins', array( $this, 'check_plugins_updates' ) );
+        add_filter( 'pre_set_site_transient_update_plugins', array( $plugin_updater, 'check_plugins_updates' ) );
 
     }
 
@@ -187,9 +177,6 @@ class Purifycss {
 	 */
 	private function define_public_hooks() {
 
-		//$this->loader->add_action( 'wp_enqueue_scripts', $this->public, 'enqueue_scripts' );
-
-		// add filter to remove inline styles
 		if ( PurifycssHelper::is_enabled() ){
 
             $this->loader->add_action( 'wp_print_styles', $this->public, 'before_wp_print_styles', 0);
@@ -208,15 +195,14 @@ class Purifycss {
 
             $this->loader->add_filter( 'template_redirect', $this->public, 'start_html_buffer', PHP_INT_MAX );
 			$this->loader->add_filter( 'wp_footer', $this->public, 'end_html_buffer', PHP_INT_MAX );
-
-            $this->thirdparty_hooks();
-
         }
         $this->loader->add_filter( 'wp_footer', $this->public, 'debug_enqueued_styles', PHP_INT_MAX);
 
+
+        $this->thirdparty_hooks();
 	}
 
-	/**
+    /**
 	 * Run the loader to execute all of the hooks with WordPress.
 	 *
 	 * @since    1.0.0
@@ -256,7 +242,6 @@ class Purifycss {
 		return $this->version;
 	}
 
-
     /**
      * Custom fixes for 3rd party plugins and themes
      *
@@ -266,91 +251,16 @@ class Purifycss {
         require_once plugin_dir_path( dirname( __FILE__ ) ) . '3rd-party/Purifycss_ThirdPartyExtension.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . '3rd-party/Purifycss_Autoptimize.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . '3rd-party/Purifycss_Elementor.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . '3rd-party/Purifycss_W3TotalCache.php';
 
         $third_parties = array(
             new Purifycss_Elementor($this->loader, $this->public),
-            new Purifycss_Autoptimize($this->loader, $this->public)
+            new Purifycss_Autoptimize($this->loader, $this->public),
+            new Purifycss_W3TotalCache($this->loader, $this->public)
         );
 
         foreach ($third_parties as $plugin) {
             $plugin->run();
         }
-
     }
-
-
-
-    public function check_plugins_updates($update_transient) {
-        global $wp_version;
-
-        if ( ! isset( $update_transient->response ) ) {
-            return $update_transient;
-        }
-
-        if ($this->update_available()) {
-            $dummyObject = (object) array(
-                "id" => "purifycss/purifycss",
-                "slug" => "purifycss",
-                "plugin" => "purifycss/purifycss.php",
-                "new_version" => $this->latest_version,
-                "url" => "https://www.webperftools.com/purifycss/purifycss-worpdress-plugin/",
-                "package" => "https://www.webperftools.com/dist/purifycss.zip",
-                "icons" => array(
-                    "2x" => "https://ps.w.org/custom-facebook-feed/assets/icon-256x256.png?rev=2313063",
-                    "1x" => "https://ps.w.org/custom-facebook-feed/assets/icon-128x128.png?rev=2313063"
-                ),
-                "banners" => array(
-                    "2x" => "https://ps.w.org/custom-facebook-feed/assets/banner-1544x500.png?rev=2313063",
-                    "1x" => "https://ps.w.org/custom-facebook-feed/assets/banner-772x250.png?rev=2137679"
-                ),
-                "banners_rtl" => array(),
-                "tested" => $this->version,
-                "requires_php" => "5.2",
-                "compatibility" => array()
-            );
-
-
-            // TODO: continue here
-            // $update_transient->response['purifycss/purifycss.php'] = $dummyObject;
-        }
-
-        return $update_transient;
-    }
-
-    private function update_available() {
-        $latest_version = file_get_contents('https://www.webperftools.com/dist/purifycss-latest-version.txt');
-        $semver = explode('.',trim($latest_version));
-        if (count($semver) !== 3) return false;
-        if (!is_numeric($semver[2])) return false;
-
-
-        $this->latest_version = $latest_version;
-
-        return $this->latest_version !== $this->version;
-    }
-
 }
-
-/*
-[custom-facebook-feed/custom-facebook-feed.php] => stdClass Object (
-    [id] => w.org/plugins/custom-facebook-feed
-    [slug] => custom-facebook-feed
-    [plugin] => custom-facebook-feed/custom-facebook-feed.php
-    [new_version] => 2.15.1
-    [url] => https://wordpress.org/plugins/custom-facebook-feed/
-    [package] => https://downloads.wordpress.org/plugin/custom-facebook-feed.2.15.1.zip
-    [icons] => Array(
-            [2x] => https://ps.w.org/custom-facebook-feed/assets/icon-256x256.png?rev=2313063
-            [1x] => https://ps.w.org/custom-facebook-feed/assets/icon-128x128.png?rev=2123286
-        )
-
-    [banners] => Array(
-            [2x] => https://ps.w.org/custom-facebook-feed/assets/banner-1544x500.png?rev=2313063
-            [1x] => https://ps.w.org/custom-facebook-feed/assets/banner-772x250.png?rev=2137679
-        )
-    [banners_rtl] => Array()
-    [tested] => 5.4.2
-    [requires_php] => 5.2
-    [compatibility] => stdClass Object()
-
-)*/

@@ -113,8 +113,7 @@ class Purifycss_Admin {
 		// save html code
 		update_option( 'purifycss_customhtml', $html );
 		// save css code
-		PurifycssHelper::save_css($css);
-		
+
 		$result   = true;
 
 		// success result
@@ -142,32 +141,29 @@ class Purifycss_Admin {
 	public function actionGetCSS(){
 		$option = "purifycss_css";
 		$url    = 'https://purifycss.online/api/purify';
-		// $url    = 'https://daee089f682c.ngrok.io/api/purify';
 		$key    = get_option('purifycss_api_key');
 		$html   = base64_encode($_POST['customhtml']);
 		$msg 	= '';
-		// compiled styles
 		$css    = '';
-		// result msg for display in div block
 		$resmsg = '';
-		// result of function execution
 		$result   = false;
 
-		// check license key
 		if ( $key =='' ){
-			$msg = __("Invalid licanse key. Please enter verifed license",'purifycss');
+			$msg = __("Invalid license key",'purifycss');
 			wp_send_json([ 'status'=>'ERR','msg'=>$msg,'resmsg'=>'error' ]);
+			return;
 		}
 
-		// save html code
 		update_option( 'purifycss_customhtml', $html );
-		// echo get_site_url();
-		// send request
+
+        $this->set_onoff("purifycss_livemode", "0");
+
+		do_action('purifycss_before_api_request');
+
         $params = [
             'timeout' =>300,
             'body'=>[
                 'url'      => [get_site_url()],
-                // "url"      => ["https://purifycss.tw1.ru/"],
                 "source"   => 'wp-plugin',
                 "options"  => ['crawl'=>true],
                 "htmlCode" => base64_decode($html),
@@ -175,9 +171,6 @@ class Purifycss_Admin {
             ]
 
         ];
-
-        //error_log('[purifycss] sending request to '.$url);
-        //error_log('[purifycss]    with parameters: '.print_r($params, 1));
 
 		$response = wp_remote_post( $url, $params );
 		
@@ -201,29 +194,38 @@ class Purifycss_Admin {
                     }
 					$resmsg = $msg;
 				}
-			}else{
-				$result = true;
-				update_option( $option, $_rsp['results']['purified']['content'] );
-				$css = $_rsp['results']['purified']['content'];
-				// save css to file
-				PurifycssHelper::save_css($css);
-				// save css to db
-				PurifycssHelper::save_css_to_db( $_rsp['css'] );
-				$percentage = round((($_rsp['results']['stats']['beforeBytes']-$_rsp['results']['stats']['afterBytes'])/$_rsp['results']['stats']['beforeBytes'])*100);
-				// calc percentage
-				$resmsg = '<b>'.$_rsp['results']['stats']['removed']
-							   .' ('.$percentage.'%)</b> '
-							   .__('of your CSS has been cleaned up','purifycss');
 
-				// save result text to db
-				update_option( 'purifycss_resultdata', $resmsg );
-				// disable live mode
-				update_option( 'purifycss_livemode', '0' );
-				
+				wp_send_json([
+                    'status'=>'ERR',
+                    'msg'=>$msg==''?__('Error by CSS generated','purifycss'):$msg,
+                    'resmsg'=>$resmsg,
+                    'resp'=>$response,
+                    'livemode' => get_option('purifycss_livemode'),
+                ]);
+				return;
+
 			}
-		}
+
+
+            $result = true;
+            update_option( $option, $_rsp['results']['purified']['content'] );
+            $css = $_rsp['results']['purified']['content'];
+            // save css to db
+            PurifycssHelper::save_css_to_db( $_rsp['css'] );
+            $percentage = round((($_rsp['results']['stats']['beforeBytes']-$_rsp['results']['stats']['afterBytes'])/$_rsp['results']['stats']['beforeBytes'])*100);
+            // calc percentage
+            $resmsg = '<b>'.$_rsp['results']['stats']['removed']
+                           .' ('.$percentage.'%)</b> '
+                           .__('of your CSS has been cleaned up','purifycss');
+
+            // save result text to db
+            update_option( 'purifycss_resultdata', $resmsg );
+
+        }
 		// remove this
 		// $resmsg=$response;
+
+        $files = Purifycsshelper::get_css_files_mapping();
 
 		// success result
 		if ( $result ){
@@ -233,17 +235,12 @@ class Purifycss_Admin {
 				'resmsg'=>$resmsg,
 				'styles'=>$css,
 				'resp'=>$rs,
+                'files' => $files,
 				'livemode' => get_option('purifycss_livemode'),
 				]);			
 		}else{
 			// error
-			wp_send_json([
-				'status'=>'ERR',
-				'msg'=>$msg==''?__('Error by CSS generated','purifycss'):$msg,
-				'resmsg'=>$resmsg,
-				'resp'=>$response,
-				'livemode' => get_option('purifycss_livemode'),
-				]);
+
 		}
 	}
 
@@ -306,14 +303,8 @@ class Purifycss_Admin {
 	public function actionLivemode(){
 		$option = "purifycss_livemode";
 		$livemode = get_option($option);
-		if ( $livemode=="" || $livemode=="0" ){
-			$livemode="1";
-		}else{
-			$livemode="0";
-		}
-		$result = update_option( $option, $livemode );
+        $result = $this->set_onoff($option, $livemode=="" || $livemode=="0" ? "1" : "0");
 
-		// success result
 		if ( $result ){
 			wp_send_json([
 				'status'=>'OK',
@@ -321,7 +312,6 @@ class Purifycss_Admin {
 				'livemode'=>$livemode,
 				]);			
 		}else{
-			// error
 			wp_send_json([
 				'status'=>'ERR',
 				'msg'=>__('Live mode don\'t enabled, site error','purifycss'),
@@ -338,15 +328,10 @@ class Purifycss_Admin {
 	public function actionTestmode(){
 		$option = "purifycss_testmode";
 		$testmode = get_option($option);
-		if ( $testmode=="" || $testmode=="0" ){
-			$testmode="1";
-		}else{
-			$testmode="0";
-		}
-		$result = update_option( $option, $testmode );
 
-		// success result
-		if ( $result ){
+        $result = $this->set_onoff($option, $testmode=="" || $testmode=="0" ? "1" : "0");
+
+        if ( $result ){
 			wp_send_json([
 				'status'=>'OK',
 				'msg'=>__('Test mode '.($testmode=='1'?'enabled':'disabled'),'purifycss'),
@@ -395,5 +380,13 @@ class Purifycss_Admin {
 		wp_localize_script( $this->plugin_name, 'customhtml_text_param', $settings_html  );
 		
 	}
+
+    private function set_onoff($option, $value) {
+        $result = update_option( $option, $value );
+        do_action('purifycss_after_onoff');
+
+
+        return $result;
+    }
 
 }

@@ -17,66 +17,22 @@ class PurifycssHelper {
      *
      * @var string
      */
-    public static $folder = 'public/generatedcss/';
-
-    /**
-     * filename of style
-     *
-     * @var string
-     */
-    public static $style = 'style.min.css';
-
-    /**
-     * inline style file name
-     *
-     * @var string
-     */
-    public static $inline_style = 'inline.css';
-
-    /**
-     * save css to file with versionized
-     *
-     * @since    1.0.0
-     */
-    static public function save_css($content) {
-        // copy exists file to timestamp copy
-        // self::$folder
-        // self::$style
-
-        if (!is_dir(plugin_dir_path( dirname( __FILE__ ) ) . self::$folder)) {
-            mkdir(plugin_dir_path( dirname( __FILE__ ) ) . self::$folder);
-        }
-
-        $file = plugin_dir_path( dirname( __FILE__ ) ) . self::$folder . self::$style ;
-        if ( file_exists( $file ) ){
-            $newfile = plugin_dir_path( dirname( __FILE__ ) ) . self::$folder.uniqid().'_'.self::$style ;
-            copy($file, $newfile);
-        }
-
-        // write code to file
-        // style.css
-        if ( file_exists( $file ) ) unlink($file);
-        file_put_contents($file, $content);
-
-        // store to db
-        // update_option( 'purifycss_css', $content );
-
-        return;
-    }
+    public static $cache_dir = 'generatedcss/';
+    public static $style = 'style.pure.css';
 
     /**
      * Get css file content
      *
-     * @return void
+     * @return string
      */
     static public function get_css() {
-        $file = plugin_dir_path( dirname( __FILE__ ) ) . self::$folder.self::$style ;
+        $file = self::get_cache_dir_path() . self::$style ;
 
         // return $file;
         if ( file_exists( $file ) ){
             return file_get_contents($file);
         }
-        return "nofile";
+        return "";
     }
 
     /**
@@ -98,7 +54,7 @@ class PurifycssHelper {
     /**
      * Using parameter ?purify=false
      *
-     * @return void
+     * @return boolean
      */
     static public function force_disabled(){
         if (isset($_GET['purify']) && $_GET['purify']=='false' ) {
@@ -110,7 +66,7 @@ class PurifycssHelper {
     /**
      * Using parameter ?purify=false
      *
-     * @return void
+     * @return boolean
      */
     static public function force_enabled(){
         if (isset($_GET['purify']) && $_GET['purify']=='true' ) {
@@ -126,14 +82,14 @@ class PurifycssHelper {
      * @return string $file
      */
     static public function get_css_file(){
-        $file = plugin_dir_url( ( __FILE__ ) ).'../' . self::$folder.self::$style ;
+        $file = self::get_cache_dir_path() . self::$style ;
         return $file;
     }
 
     /**
      * Check if LIVE mode enabled
      *
-     * @return void
+     * @return boolean
      */
     static public function check_live_mode(){
         if ( get_option('purifycss_livemode')=='1' ){
@@ -145,7 +101,7 @@ class PurifycssHelper {
     /**
      * Check if TEST mode enabled
      *
-     * @return void
+     * @return boolean
      */
     static public function check_test_mode(){
         if(!function_exists('wp_get_current_user')) {
@@ -167,32 +123,17 @@ class PurifycssHelper {
      * @return void
      */
     static public function save_css_to_db($css){
-        global $wpdb;
-        $table_name = $wpdb->prefix . "purifycss";
-        // clean db
-        $wpdb->query("TRUNCATE TABLE $table_name");
-        // clean files
-        $files = glob(plugin_dir_path( dirname( __FILE__ ) ) . self::$folder.'*'); // get all file names
-        foreach($files as $file){ // iterate files
-            if(is_file($file)){
-                unlink($file); // delete file
-            }
-        }
+        self::cleanup_existing_files();
 
-        // prepared array
         $todb   = [];
-        // inlinestyles
-        $inline = "";
-        // iterate over map
+
         foreach ($css as $_obj){
-            // check inline styles
             if ( isset($_obj['inline']) && $_obj['inline']==True ){
                 $css_identifier = self::get_css_id_by_content($_obj['original']['content']);
             }else{
                 $css_identifier = $_obj['url'];
             }
 
-            // save to file
             $filename = md5($css_identifier.uniqid()).'.css';
 
             $_obj = apply_filters('purifycss_before_filesave', $_obj);
@@ -201,35 +142,49 @@ class PurifycssHelper {
             if (isset($_obj['url'])) {
                 $cssContent = self::fix_relative_paths($cssContent, $_obj['url']);
             }
-            file_put_contents( plugin_dir_path( dirname( __FILE__ ) ) . self::$folder.$filename , $cssContent);
+
+            if (!is_dir(self::get_cache_dir_path())) {
+                mkdir(self::get_cache_dir_path());
+            }
+
+            file_put_contents( self::get_cache_dir_path() . $filename , $cssContent);
 
             $todb[] = [
                 'orig_css' => $css_identifier,
-                'css'      => 'generatedcss/'.$filename
+                'css'      => $filename,
+                'before'    => $_obj['stats']['before'],
+                'after'     => $_obj['stats']['after'],
+                'used'      => $_obj['stats']['percentageUsed'],
+                'unused'     => $_obj['stats']['percentageUnused'],
             ];
-
         }
 
-        // save to db
-        $values =  array_reduce( $todb, function( $acc, $item ) {
-            $acc[] =" ( '".$item['orig_css']."','".$item['css']."' ) ";
-            return $acc;
-        } );
+        PurifycssDb::drop_table();
+        PurifycssDb::create_table();
 
-        if ( count($values)>0 ){
-            $wpdb->query("INSERT INTO $table_name
-                            (orig_css,css)
-                            VALUES ".join(',',$values).";");
-        }
+        PurifycssDb::insert($todb);
+
 
         return;
     }
 
-
+    /**
+     * generates a short string that can be used to identify an inline css block
+     *
+     * @param string $content content of inline css block
+     * @return string
+     */
     static public function get_css_id_by_content($content) {
         return substr(trim(preg_replace('/\s+/', ' ', $content)), 0, 100);
     }
 
+    /**
+     * converts all relative URLs in a CSS file to absolute URLs
+     *
+     * @param string $cssContent content of css file
+     * @param string $url url of css file that is used for calculating absolute url from a relative url
+     * @return string
+     */
     public static function fix_relative_paths($cssContent, $url) {
         $path = dirname($url)."/";
 
@@ -241,8 +196,55 @@ class PurifycssHelper {
 
     }
 
+    /**
+     * is debug mode enabled?
+     *
+     * @return boolean
+     */
     public static function is_debug(){
         return isset($_GET['purifydebug']) && $_GET['purifydebug']=1;
+    }
+
+    public static function get_css_files_mapping() {
+        $files = array();
+        foreach(PurifycssDb::get_all() as $file) {
+            $file->css_filename = $file->css;
+            $file->css = PurifycssHelper::get_cache_dir_url() . $file->css;
+            $files[] = $file;
+        }
+        return $files;
+    }
+
+    /**
+     * remove existing files in cache directory
+     *
+     * @return void
+     */
+    private static function cleanup_existing_files() {
+        $files = glob( self::get_cache_dir_path() . '*');
+        foreach($files as $file){
+            if(is_file($file)){
+                unlink($file);
+            }
+        }
+    }
+
+    /**
+     * get path of cache directory
+     *
+     * @return string
+     */
+    public static function get_cache_dir_path() {
+        return plugin_dir_path( __DIR__ ) . self::$cache_dir;
+    }
+
+    /**
+     * get url of cache directory
+     *
+     * @return string
+     */
+    public static function get_cache_dir_url() {
+        return plugin_dir_url( __DIR__ ) . self::$cache_dir;
     }
 
 }

@@ -20,6 +20,9 @@
      padding-left:2rem;
  }
 
+ .mr-3 {margin-right: 1rem !important; }
+ .ml-3 {margin-left: 1rem !important;}
+
  .green-text{
     color:green;
  }
@@ -43,4 +46,19 @@
 
 .activated-text .dashicons{
     line-height:30px;
+}
+
+.file-mapping-container {
+   padding-left: 10px;
+}
+
+.purified-result-item {
+   padding-left: 10px;
+   padding-top: 10px;
+   padding-bottom: 10px;
+   border-bottom: 1px solid lightgray
+}
+
+.purified-result-item:first-of-type {
+   border-top: 1px solid lightgray
 }

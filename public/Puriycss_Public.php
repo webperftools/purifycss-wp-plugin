@@ -57,18 +57,7 @@ class Purifycss_Public {
 		$this->plugin_name = $plugin_name;
 		$this->version = $version;
 
-        global $wpdb;
-        $table_name = $wpdb->prefix . "purifycss";
-
-        $files = array();
-        $res = $wpdb->get_results( "SELECT orig_css, css from $table_name;" );
-        foreach($res as $file) {
-
-            $file->css = plugin_dir_url( ( __FILE__ ) ).$file->css;
-            $files[] = $file;
-        }
-        $this->files = $files;
-
+        $this->files = PurifycssHelper::get_css_files_mapping();
 	}
 
 
@@ -101,8 +90,6 @@ class Purifycss_Public {
         if ($skip) return;
 
 		global $wp_styles;
-		global $wpdb;   
-		$table_name = $wpdb->prefix . "purifycss";
 		$need_to_enc = [];
 
         foreach( $wp_styles->queue as $style ) {
@@ -119,8 +106,7 @@ class Purifycss_Public {
                 continue;
             }
 
-            $src = $wp_styles->registered[$style]->src;
-            $files = $wpdb->get_results( "SELECT css from $table_name WHERE  `orig_css` LIKE '%$src%' ;" );
+            $files = PurifycssDb::get_by_src($wp_styles->registered[$style]->src);
             foreach ($files as $file){
                 // there is a purified version, so remove original inline styles and enqueue corresponding file
 
@@ -146,7 +132,7 @@ class Purifycss_Public {
                 }
 
                 wp_dequeue_style($wp_styles->registered[$style]->handle);
-                wp_enqueue_style($wp_styles->registered[$style]->handle . '_purified', plugin_dir_url( ( __FILE__ ) ).$file->css, $deps, false, 'all' );
+                wp_enqueue_style($wp_styles->registered[$style]->handle . '_purified', PurifycssHelper::get_cache_dir_url() . $file->css, $deps, false, 'all' );
 
                 if ($inline_style_purified) {
                     wp_add_inline_style($wp_styles->registered[$style]->handle . '_purified', $inline_style_purified);
@@ -176,11 +162,8 @@ class Purifycss_Public {
      * @return string|boolean
      */
 	public function get_matching_file($identifier) {
-        global $wpdb;
-        $table_name = $wpdb->prefix . "purifycss";
-
         if (!$this->files) {
-            $this->files = $wpdb->get_results( "SELECT orig_css, css from $table_name;" );
+            $this->files = PurifycssDb::get_all();
         }
 
         foreach ($this->files as $file) {
@@ -224,8 +207,6 @@ class Purifycss_Public {
             echo "<table style='font-size:11px;line-height:1;background:white;color:black;border: 1px solid black;margin: 10px;'>";
             foreach( $wp_styles->queue as $style ) {
                 if (strpos($style, 'purified') != false) continue;
-
-
 
                 echo "<tr>";
                 echo "<td>$style</td>";
@@ -274,9 +255,7 @@ class Purifycss_Public {
         $skip = apply_filters('purifycss_skip_replace_inline_styles', false);
         if ($skip) return;
 
-        global $wpdb;
         global $wp_styles;
-        $table_name = $wpdb->prefix . "purifycss";
 
         $wpHTML = ob_get_clean();
 
@@ -286,13 +265,13 @@ class Purifycss_Public {
         foreach ($matches[1] as $key => $match) {
             $css_identifier = PurifycssHelper::get_css_id_by_content($match);
 
-            $files = $wpdb->get_results( "SELECT css from $table_name WHERE  `orig_css` LIKE '%$css_identifier%';" );
+            $files = PurifycssDb::get_by_src($css_identifier);
 
             foreach($files as $file) {
                 // there is a purified version, so remove original inline styles and enqueue corresponding file
                 // wp_enqueue_style('inline_style_'.$key.'_purified', plugin_dir_url( ( __FILE__ ) ).$file->css, array(), false, 'all' );
 
-                $purifiedcss_inline = file_get_contents(plugin_dir_path( ( __FILE__ ) ).$file->css);
+                $purifiedcss_inline = file_get_contents( PurifycssHelper::get_cache_dir_path() . $file->css );
                 $wpHTML = str_replace($match,$purifiedcss_inline, $wpHTML);
             }
         }
@@ -320,7 +299,6 @@ class Purifycss_Public {
 					wp_enqueue_style( $this->plugin_name.'_'.$i, $style, array(), $this->version, 'all' );
 					$i++;
 				}
-				//wp_enqueue_style( $this->plugin_name.'_inline', plugin_dir_url( ( __FILE__ ) ).'../' . PurifycssHelper::$folder.PurifycssHelper::$inline_style, array(), $this->version, 'all' );
 			}
 
 			return;
@@ -328,16 +306,13 @@ class Purifycss_Public {
 			global $wp;
 			// $url = home_url(add_query_arg(array(), $wp->request));
 			// echo $url;
-			global $wpdb;   
-        	$table_name = $wpdb->prefix . "purifycss";
-			$files = $wpdb->get_results( "SELECT css from $table_name WHERE  `orig_css` LIKE '%${url}%' ;" );
+			$files = PurifycssDb::get_by_src($url);
 			$i=0;
 			foreach ($files as $file){
 				// echo ($file->css);
-				wp_enqueue_style( $this->plugin_name.'_'.$i, plugin_dir_url( ( __FILE__ ) ).$file->css, array(), $this->version, 'all' );
+				wp_enqueue_style( $this->plugin_name.'_'.$i, PurifycssHelper::get_cache_dir_url() . $file->css, array(), $this->version, 'all' );
 				$i++;
 			}
-			//wp_enqueue_style( $this->plugin_name.'_inline', plugin_dir_url( ( __FILE__ ) ).'../' . PurifycssHelper::$folder.PurifycssHelper::$inline_style, array(), $this->version, 'all' );
 		} else {
 			wp_enqueue_style( $this->plugin_name, PurifycssHelper::get_css_file(), array(), $this->version, 'all' );
 		}
@@ -368,14 +343,11 @@ class Purifycss_Public {
 
 
 	public function get_corresponding_css($content) {
-        global $wpdb;
-        $table_name = $wpdb->prefix . "purifycss";
-
         $css_identifier = PurifycssHelper::get_css_id_by_content($content);
-        $files = $wpdb->get_results( "SELECT css from $table_name WHERE  `orig_css` LIKE '%$css_identifier%' ;" );
+        $files = PurifycssDb::get_by_src($css_identifier);
 
         foreach($files as $file) {
-            return file_get_contents(plugin_dir_path( ( __FILE__ ) ).$file->css);
+            return file_get_contents( PurifycssHelper::get_cache_dir_path() . $file->css );
         }
 
         /*echo "<pre>";
@@ -386,13 +358,10 @@ class Purifycss_Public {
     }
 
     public function get_style_dependents($depsrc) {
-        global $wpdb;
-        $table_name = $wpdb->prefix . "purifycss";
-
-        $files = $wpdb->get_results( "SELECT css from $table_name WHERE  `orig_css` LIKE '%$depsrc%';" );
+        $files = PurifycssDb::get_by_src($depsrc);
 
         foreach($files as $file) {
-            return plugin_dir_url( ( __FILE__ ) ).$file->css;
+            return PurifycssHelper::get_cache_dir_url() . $file->css;
         }
 
         return false;

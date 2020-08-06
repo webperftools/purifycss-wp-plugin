@@ -30,20 +30,7 @@ if ( ! defined( 'WPINC' ) ) {
 
 define( 'PURIFYCSS_VERSION', '1.0.1' );
 
-function activate_purifycss() {
-	require_once plugin_dir_path( __FILE__ ) . 'includes/class-purifycss-activator.php';
-	Purifycss_Activator::activate();
-}
-
-function deactivate_purifycss() {
-	require_once plugin_dir_path( __FILE__ ) . 'includes/class-purifycss-deactivator.php';
-	Purifycss_Deactivator::deactivate();
-}
-
-register_activation_hook( __FILE__, 'activate_purifycss' );
-register_deactivation_hook( __FILE__, 'deactivate_purifycss' );
-
-require plugin_dir_path( __FILE__ ) . 'includes/class-purifycss.php';
+require plugin_dir_path( __FILE__ ) . 'includes/Purifycss.php';
 
 /**
  * Begins execution of the plugin.

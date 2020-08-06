@@ -3,13 +3,7 @@ let customhtml_text;
 jQuery(document).ready(function($){
 	'use strict';
 
-	/**
-	 * All of the code for your admin-facing JavaScript source
-	 * should reside in this file.
-	 */
-
 	init();
-
 
 	/**
 	 * function of initialize settings window
@@ -23,7 +17,6 @@ jQuery(document).ready(function($){
 				"jshint":{"boss":true,"curly":true,"eqeqeq":true,"eqnull":true,"es3":true,"expr":true,"immed":true,"noarg":true,"nonbsp":true,"onevar":true,"quotmark":"single","trailing":true,"undef":true,"unused":true,"browser":true,"globals":{"_":false,"Backbone":false,"jQuery":false,"JSON":false,"wp":false}},
 				"htmlhint":{"tagname-lowercase":true,"attr-lowercase":true,"attr-value-double-quotes":false,"doctype-first":false,"tag-pair":true,"spec-char-escape":true,"id-unique":true,"src-not-empty":true,"attr-no-duplication":true,"alt-require":true,"space-tab-mixed-disabled":"tab","attr-unsafe-chars":true}
 			};
-
 			purified_css = wp.codeEditor.initialize( "purified_css", codeEditorSettings);
 		}
 		/**
@@ -78,6 +71,32 @@ jQuery(document).ready(function($){
 			console.log(data);
 			$('.result-block').html("Result: "+data.resmsg).show();
 			purified_css.codemirror.doc.setValue(data.styles);
+
+
+			$('.editor-container').hide();
+
+			var html = "";
+			$.each(data.files, function(i,mapping) {
+			 html = html + '<div class="purified-result-item">'+
+				'<a href="'+mapping.orig_css+'">'+mapping.orig_css+'</a><br>' +
+				'&middot; clean css file: <a target="_blank" href="'+mapping.css+'">'+mapping.css_filename+'</a><br>'+
+				'&middot; <span style="display:inline-block;padding-right: 15px;">before: <strong>'+mapping.before+'</strong></span>'+
+				'<span style="display:inline-block;padding-right: 15px;">after: <strong>'+mapping.after+'</strong> </span>'+
+				'<span style="display:inline-block;padding-right: 15px;">used: <strong>'+mapping.used+'</strong> </span>'+
+				'<span style="display:inline-block;padding-right: 15px;">unused: <strong>'+mapping.unused+'</strong> </span>'+
+				'<br>'+
+				'</div>';
+			});
+			$('.file-mapping-container').html(html);
+
+
+			var crawlSummary = '<span>Crawled '+data.resp.html.length+' URLs.</span><br>';
+			$.each(data.resp.html, function(i,html) {
+				crawlSummary += '<span> &middot; '+html.url+'</span><br>';
+			});
+
+			$('.crawl-summary').html(crawlSummary);
+
 			// enable/disable live mode if code generated succesfully
 			if ( data.livemode=='1' ){
 				$('#live_button').addClass('active');
@@ -89,7 +108,7 @@ jQuery(document).ready(function($){
 
 	/**
 	 * Expand/ scrollup block
-	 * @param {event} ev 
+	 * @param {event} ev
 	 */
 	function toogletext_click(ev){
 		$('.expand-click').toggleClass('active');

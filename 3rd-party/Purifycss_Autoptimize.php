@@ -4,12 +4,13 @@
 class Purifycss_Autoptimize extends Purifycss_ThirdPartyExtension {
 
     public function run() {
-        if ($this->autoptimizePluginInstalled() && $this->autoptimizedCssEnabled()) {
-            add_filter( 'purifycss_skip_replace_link_styles', function () {return true;});
-            add_filter( 'purifycss_skip_replace_inline_styles', function () {return true;});
+        if (!PurifycssHelper::is_enabled()) return;
+        if (!$this->autoptimizePluginActive() | !$this->autoptimizedCssEnabled()) return;
 
-            add_filter( 'autoptimize_html_after_minify', array($this, 'replace_styles'), 20);
-        }
+        add_filter( 'purifycss_skip_replace_link_styles', function () {return true;});
+        add_filter( 'purifycss_skip_replace_inline_styles', function () {return true;});
+
+        add_filter( 'autoptimize_html_after_minify', array($this, 'replace_styles'), 20);
     }
 
     public function replace_styles($html) {
@@ -31,13 +32,13 @@ class Purifycss_Autoptimize extends Purifycss_ThirdPartyExtension {
         return $html;
     }
 
-    private function autoptimizePluginInstalled() {
+    private function autoptimizePluginActive() {
         if ( ! function_exists( 'get_plugins' ) ) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
         foreach (get_plugins() as $key => $value) {
             if ($key === 'autoptimize/autoptimize.php') {
-                return true;
+                return is_plugin_active($key);
             }
         }
 
