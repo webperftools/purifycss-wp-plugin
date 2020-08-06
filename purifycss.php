@@ -17,7 +17,7 @@
  * Description:       Remove unused CSS and reduce the total web page load time. You can add the clean CSS manually or use the PurifyCSS API.
  * Version:           1.0.3
  * Author:            Webperftools
- * Author URI:        https://www.peterbagi.de/
+ * Author URI:        https://www.webperftools.com/
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain:       purifycss
