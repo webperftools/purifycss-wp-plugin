@@ -28,7 +28,7 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-define( 'PURIFYCSS_VERSION', '1.0.1' );
+define( 'PURIFYCSS_VERSION', '1.0.3' );
 
 require plugin_dir_path( __FILE__ ) . 'includes/Purifycss.php';
 

@@ -21,30 +21,6 @@ class Purifycss_Updater {
 
     }
 
-    /*
-    [custom-facebook-feed/custom-facebook-feed.php] => stdClass Object (
-        [id] => w.org/plugins/custom-facebook-feed
-        [slug] => custom-facebook-feed
-        [plugin] => custom-facebook-feed/custom-facebook-feed.php
-        [new_version] => 2.15.1
-        [url] => https://wordpress.org/plugins/custom-facebook-feed/
-        [package] => https://downloads.wordpress.org/plugin/custom-facebook-feed.2.15.1.zip
-        [icons] => Array(
-                [2x] => https://ps.w.org/custom-facebook-feed/assets/icon-256x256.png?rev=2313063
-                [1x] => https://ps.w.org/custom-facebook-feed/assets/icon-128x128.png?rev=2123286
-            )
-
-        [banners] => Array(
-                [2x] => https://ps.w.org/custom-facebook-feed/assets/banner-1544x500.png?rev=2313063
-                [1x] => https://ps.w.org/custom-facebook-feed/assets/banner-772x250.png?rev=2137679
-            )
-        [banners_rtl] => Array()
-        [tested] => 5.4.2
-        [requires_php] => 5.2
-        [compatibility] => stdClass Object()
-
-    )*/
-
     public function check_plugins_updates($update_transient) {
         global $wp_version;
 
@@ -53,9 +29,7 @@ class Purifycss_Updater {
         }
 
         if ($this->update_available()) {
-            // error_log('Purifycss update is available. New version: '.$this->latest_version. '  Current version: '.$this->current_version );
-
-            $dummyObject = (object) array(
+            $transient_obj = (object) array(
                 "id" => "purifycss/purifycss",
                 "slug" => "purifycss",
                 "plugin" => "purifycss/purifycss.php",
@@ -76,7 +50,7 @@ class Purifycss_Updater {
                 "compatibility" => array()
             );
 
-            $update_transient->response['purifycss/purifycss.php'] = $dummyObject;
+            $update_transient->response['purifycss/purifycss.php'] = $transient_obj;
         }
 
         return $update_transient;
