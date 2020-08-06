@@ -15,7 +15,7 @@
  * Plugin Name:       PurifyCSS
  * Plugin URI:        https://www.webperftools.com/purifycss/purifycss-wordpress-plugin/
  * Description:       Remove unused CSS and reduce the total web page load time. You can add the clean CSS manually or use the PurifyCSS API.
- * Version:           1.0.1
+ * Version:           1.0.3
  * Author:            Webperftools
  * Author URI:        https://www.peterbagi.de/
  * License:           GPL-2.0+
