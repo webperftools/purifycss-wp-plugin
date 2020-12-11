@@ -1,91 +1,25 @@
 <?php
 
-/**
- * The public-facing functionality of the plugin.
- *
- * @link       https://github.com/f2re
- * @since      1.0.0
- *
- * @package    Purifycss
- * @subpackage Purifycss/public
- */
-
-/**
- * The public-facing functionality of the plugin.
- *
- * Defines the plugin name, version, and two examples hooks for how to
- * enqueue the public-facing stylesheet and JavaScript.
- *
- * @package    Purifycss
- * @subpackage Purifycss/public
- * @author     F2re <lendingad@gmail.com>
- */
 class Purifycss_Public {
-
-	/**
-	 * The ID of this plugin.
-	 *
-	 * @since    1.0.0
-	 * @access   private
-	 * @var      string    $plugin_name    The ID of this plugin.
-	 */
-	private $plugin_name;
-
-	/**
-	 * The version of this plugin.
-	 *
-	 * @since    1.0.0
-	 * @access   private
-	 * @var      string    $version    The current version of this plugin.
-	 */
+    private $plugin_name;
 	private $version;
-
-    /**
-     * @var file mapping between original and purified css from DB (cached)
-     */
     public $files;
 
-    /**
-	 * Initialize the class and set its properties.
-	 *
-	 * @since    1.0.0
-	 * @param      string    $plugin_name       The name of the plugin.
-	 * @param      string    $version    The version of this plugin.
-	 */
 	public function __construct( $plugin_name, $version ) {
-
 		$this->plugin_name = $plugin_name;
 		$this->version = $version;
-
         $this->files = PurifycssHelper::get_css_files_mapping();
 	}
 
-
-    /**
-     * remove styles in site
-     * used only in manual css
-     *
-     * @return void
-     */
     function remove_all_styles(){
         $this->replace_all_styles();
-
     }
-
 
     function enqueue_purified_css_file() {
         wp_enqueue_style('styles_purified', PurifycssHelper::get_css_file(), false, false, 'all' );
-
     }
 
-	/**
-	 * dequeue styles in site
-	 * before check if live mode ot prod mode
-	 *
-	 * @return void
-	 */
 	function replace_all_styles() {
-
         $skip = apply_filters('purifycss_skip_replace_link_styles', false);
         if ($skip) return;
 
@@ -143,36 +77,24 @@ class Purifycss_Public {
 	}
 
 	public function replace_styles($url) {
-
 	    if (isset($_GET['purifydebug'])) {
 	        echo "<pre>";
             print_r($url);echo "\n";
             print_r($this->get_matching_file($url));
             echo "</pre>";
         }
-
 	    return $url;
     }
 
-
-    /**
-     * maps original css to purified css from db table
-     * requests db only once per request
-     *
-     * @return string|boolean
-     */
 	public function get_matching_file($identifier) {
         if (!$this->files) {
             $this->files = PurifycssDb::get_all();
         }
-
         foreach ($this->files as $file) {
             if ( strpos($file->orig_css, $identifier) !== false ) return $file->css;
         }
-
         return false;
     }
-
 
     public function return_empty($arg) {
 	    return "";
@@ -236,20 +158,10 @@ class Purifycss_Public {
         }
     }
 
-    /**
-     * buffer html output
-     *
-     * @return void
-     */
     public function start_html_buffer(){
         ob_start();
     }
 
-    /**
-     * end html buffer, parse and remove inline styles
-     *
-     * @return void
-     */
     public function end_html_buffer(){
 
         $skip = apply_filters('purifycss_skip_replace_inline_styles', false);
@@ -281,12 +193,6 @@ class Purifycss_Public {
         echo $wpHTML;
     }
 
-
-	/**
-	 * Register the stylesheets for the public-facing side of the site.
-	 *
-	 * @since    1.0.0
-	 */
 	public function enqueue_styles() {
 		// echo PurifycssHelper::get_css_file();
 		// get_option('purifycss_manual_css')==false

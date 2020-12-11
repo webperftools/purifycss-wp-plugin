@@ -1,15 +1,5 @@
 <?php
 
-/**
- * The file that defines htlper function
- *
- * @link       https://github.com/f2re
- * @since      1.0.0
- *
- * @package    Purifycss
- * @subpackage Purifycss/includes
- */
-
 class PurifycssDb {
 
     public static $table_name = 'purifycss';
