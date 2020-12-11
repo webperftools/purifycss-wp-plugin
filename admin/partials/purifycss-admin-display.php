@@ -1,19 +1,3 @@
-<?php
-
-/**
- * Provide a admin area view for the plugin
- *
- * This file is used to markup the admin-facing aspects of the plugin.
- *
- * @link       https://github.com/f2re
- * @since      1.0.0
- *
- * @package    Purifycss
- * @subpackage Purifycss/admin/partials
- */
-
-?>
-
 <div class="purifycss-body">
     <h1>PurifyCSS</h1>
 

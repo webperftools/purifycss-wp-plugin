@@ -6,19 +6,10 @@ class Purifycss_Updater {
     private $current_version;
     private $latest_version;
 
-    /**
-     * Initialize the class and set its properties.
-     *
-     * @since    1.0.0
-     * @param      string    $plugin_name       The name of this plugin.
-     * @param      string    $version    The version of this plugin.
-     */
     public function __construct( $plugin_name, $version ) {
-
         $this->plugin_name = $plugin_name;
         $this->current_version = $version;
         $this->latest_version = false;
-
     }
 
     public function check_plugins_updates($update_transient) {
