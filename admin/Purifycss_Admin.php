@@ -66,8 +66,8 @@ class Purifycss_Admin {
 
 	public function actionGetCSS(){
 		$option = "purifycss_css";
-		// $url    = 'https://bfc6b7749edb.ngrok.io/api/purify';
-		$url    = 'https://purifycss.online/api/purify';
+		$url    = 'https://bfc6b7749edb.ngrok.io/api/purify';
+		// $url    = 'https://purifycss.online/api/purify';
 		$key    = get_option('purifycss_api_key');
 		$html   = base64_encode($_POST['customhtml']);
 		$msg 	= '';
@@ -183,7 +183,7 @@ class Purifycss_Admin {
 		$result   = false;
 
 		// send request
-		$response = wp_remote_post( $url, [ 'body'=>['key'=>$key] ] );
+		$response = wp_remote_post( $url, [ 'body'=>['key'=>$key, 'domain'=>home_url()] ] );
 
 		if ( is_wp_error( $response ) ) {
 			$msg    = $response->get_error_message();
