@@ -104,11 +104,15 @@ class Purifycss {
         require_once plugin_dir_path( dirname( __FILE__ ) ) . '3rd-party/Purifycss_Autoptimize.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . '3rd-party/Purifycss_Elementor.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . '3rd-party/Purifycss_W3TotalCache.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . '3rd-party/Purifycss_WpRocket.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . '3rd-party/Purifycss_Overrides.php';
 
         $third_parties = array(
             new Purifycss_Elementor($this->loader, $this->public),
             new Purifycss_Autoptimize($this->loader, $this->public),
-            new Purifycss_W3TotalCache($this->loader, $this->public)
+            new Purifycss_W3TotalCache($this->loader, $this->public),
+            new Purifycss_WpRocket($this->loader, $this->public),
+            new Purifycss_Overrides($this->loader, $this->public)
         );
 
         foreach ($third_parties as $plugin) {

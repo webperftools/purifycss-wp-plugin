@@ -80,9 +80,6 @@ class PurifycssHelper {
             $_obj = apply_filters('purifycss_before_filesave', $_obj);
 
             $cssContent = $_obj['purified']['content'];
-            if (isset($_obj['url'])) {
-                $cssContent = self::fix_relative_paths($cssContent, $_obj['url']);
-            }
 
             if (!is_dir(self::get_cache_dir_path())) {
                 mkdir(self::get_cache_dir_path());
@@ -102,26 +99,47 @@ class PurifycssHelper {
 
         PurifycssDb::drop_table();
         PurifycssDb::create_table();
-
         PurifycssDb::insert($todb);
+        return;
+    }
 
+    static public function save_pages_to_db($html){
+        $todb   = [];
+        foreach ($html as $_obj){
+            $page_url = $_obj['url'];
+            $filename = md5($page_url.uniqid()).'.css';
+
+            $_obj = apply_filters('purifycss_before_filesave', $_obj);
+
+            $purifiedObj = $_obj['styles']['purified'];
+            $cssContent = array_key_exists('purified',$purifiedObj) ? $purifiedObj['purified']['content'] : '';
+
+            if (!is_dir(self::get_cache_dir_path())) {
+                mkdir(self::get_cache_dir_path());
+            }
+            file_put_contents( self::get_cache_dir_path() . $filename , $cssContent);
+
+            $todb[] = [
+                'url'       => $page_url,
+                'css'       => $filename,
+                'before'    => array_key_exists('stats',$purifiedObj) ? $purifiedObj['stats']['before'] : '',
+                'after'     => array_key_exists('stats',$purifiedObj) ? $purifiedObj['stats']['after'] : '',
+                'used'      => array_key_exists('stats',$purifiedObj) ? $purifiedObj['stats']['percentageUsed'] : '',
+                'unused'    => array_key_exists('stats',$purifiedObj) ? $purifiedObj['stats']['percentageUnused'] : '',
+                'criticalcss'  => array_key_exists('critical',$purifiedObj) ? $purifiedObj['critical'] : '',
+            ];
+        }
+
+        PurifycssDb::drop_pages_table();
+        PurifycssDb::create_pages_table();
+
+        PurifycssDb::insert_pages($todb);
 
         return;
     }
 
     static public function get_css_id_by_content($content) {
         return substr(trim(preg_replace('/\s+/', ' ', $content)), 0, 100);
-    }
-
-    public static function fix_relative_paths($cssContent, $url) {
-        $path = dirname($url)."/";
-
-        $search = '#url\((?!\s*[\'"]?(?:https?:)?//)\s*([\'"])?#';
-        $replace = "url($1{$path}";
-        $cssContent = preg_replace($search, $replace, $cssContent);
-
-        return $cssContent;
-
     }
 
     public static function is_debug(){
@@ -132,6 +150,15 @@ class PurifycssHelper {
         $files = array();
         foreach(PurifycssDb::get_all() as $file) {
             $file->css_filename = $file->css;
+            $file->css = PurifycssHelper::get_cache_dir_url() . $file->css;
+            $files[] = $file;
+        }
+        return $files;
+    }
+
+    public static function get_pages_files_mapping() {
+        $files = array();
+        foreach(PurifycssDb::get_all_pages() as $file) {
             $file->css = PurifycssHelper::get_cache_dir_url() . $file->css;
             $files[] = $file;
         }

@@ -66,6 +66,7 @@ class Purifycss_Admin {
 
 	public function actionGetCSS(){
 		$option = "purifycss_css";
+		// $url    = 'https://bfc6b7749edb.ngrok.io/api/purify';
 		$url    = 'https://purifycss.online/api/purify';
 		$key    = get_option('purifycss_api_key');
 		$html   = base64_encode($_POST['customhtml']);
@@ -99,7 +100,7 @@ class Purifycss_Admin {
         ];
 
 		$response = wp_remote_post( $url, $params );
-		
+
 		// check error
 		if ( is_wp_error( $response ) ) {
 			$msg    = $response->get_error_message();
@@ -138,6 +139,8 @@ class Purifycss_Admin {
             $css = $_rsp['results']['purified']['content'];
             // save css to db
             PurifycssHelper::save_css_to_db( $_rsp['css'] );
+            PurifycssHelper::save_pages_to_db( $_rsp['html'] );
+
             $percentage = round((($_rsp['results']['stats']['beforeBytes']-$_rsp['results']['stats']['afterBytes'])/$_rsp['results']['stats']['beforeBytes'])*100);
             // calc percentage
             $resmsg = '<b>'.$_rsp['results']['stats']['removed']
@@ -281,8 +284,7 @@ class Purifycss_Admin {
 
     private function set_onoff($option, $value) {
         $result = update_option( $option, $value );
-        do_action('purifycss_after_onoff');
-
+        do_action('purifycss_after_onoff', array('option' => $option, 'value' => $value));
 
         return $result;
     }

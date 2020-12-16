@@ -4,11 +4,13 @@ class Purifycss_Public {
     private $plugin_name;
 	private $version;
     public $files;
+    public $files_perpage;
 
 	public function __construct( $plugin_name, $version ) {
 		$this->plugin_name = $plugin_name;
 		$this->version = $version;
         $this->files = PurifycssHelper::get_css_files_mapping();
+        $this->files_perpage = PurifycssHelper::get_pages_files_mapping();
 	}
 
     function remove_all_styles(){
@@ -65,12 +67,20 @@ class Purifycss_Public {
                     }
                 }
 
-                wp_dequeue_style($wp_styles->registered[$style]->handle);
-                wp_enqueue_style($wp_styles->registered[$style]->handle . '_purified', PurifycssHelper::get_cache_dir_url() . $file->css, $deps, false, 'all' );
 
-                if ($inline_style_purified) {
-                    wp_add_inline_style($wp_styles->registered[$style]->handle . '_purified', $inline_style_purified);
+
+                wp_dequeue_style($wp_styles->registered[$style]->handle);
+
+                $skipEnqueue = apply_filters('purifycss_skip_enqueue_link_styles', false);
+                if (!$skipEnqueue) {
+                    wp_enqueue_style($wp_styles->registered[$style]->handle . '_purified', PurifycssHelper::get_cache_dir_url() . $file->css, $deps, false, 'all' );
+
+                    if ($inline_style_purified) {
+                        wp_add_inline_style($wp_styles->registered[$style]->handle . '_purified', $inline_style_purified);
+                    }
                 }
+
+                do_action('purifycss_after_replace_all_styles');
             }
         }
 
@@ -163,33 +173,32 @@ class Purifycss_Public {
     }
 
     public function end_html_buffer(){
-
         $skip = apply_filters('purifycss_skip_replace_inline_styles', false);
-        if ($skip) return;
 
         global $wp_styles;
-
         $wpHTML = ob_get_clean();
 
-        $matches = '';
-        preg_match_all('/<style[^>]*>([^<]*)<\/style>/im', $wpHTML, $matches);
+        if (!$skip) {
+            $matches = '';
+            preg_match_all('/<style[^>]*>([^<]*)<\/style>/im', $wpHTML, $matches);
 
-        foreach ($matches[1] as $key => $match) {
-            $css_identifier = PurifycssHelper::get_css_id_by_content($match);
+            foreach ($matches[1] as $key => $match) {
+                $css_identifier = PurifycssHelper::get_css_id_by_content($match);
 
-            $files = PurifycssDb::get_by_src($css_identifier);
+                $files = PurifycssDb::get_by_src($css_identifier);
 
-            foreach($files as $file) {
-                // there is a purified version, so remove original inline styles and enqueue corresponding file
-                // wp_enqueue_style('inline_style_'.$key.'_purified', plugin_dir_url( ( __FILE__ ) ).$file->css, array(), false, 'all' );
+                foreach($files as $file) {
+                    // there is a purified version, so remove original inline styles and enqueue corresponding file
+                    // wp_enqueue_style('inline_style_'.$key.'_purified', plugin_dir_url( ( __FILE__ ) ).$file->css, array(), false, 'all' );
 
-                $purifiedcss_inline = file_get_contents( PurifycssHelper::get_cache_dir_path() . $file->css );
-                $wpHTML = str_replace($match,$purifiedcss_inline, $wpHTML);
+                    $purifiedcss_inline = file_get_contents( PurifycssHelper::get_cache_dir_path() . $file->css );
+                    $wpHTML = str_replace($match,$purifiedcss_inline, $wpHTML);
+                }
             }
         }
 
         //preg_replace('/<style[^>]*><\/style>/is','',$wpHTML);
-
+        $wpHTML = apply_filters('purifycss_before_final_print', $wpHTML);
         echo $wpHTML;
     }
 

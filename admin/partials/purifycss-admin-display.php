@@ -1,11 +1,22 @@
 <div class="purifycss-body">
     <h1>PurifyCSS</h1>
 
+    <?php
+    $status = "";
+
+    if (get_option('purifycss_livemode')=='1') { $status = "active for all users";}
+    else if (get_option('purifycss_testmode')=='1') { $status = "active only for admin users";}
+    else { $status = "not active"; }
+    ?>
+   <p>Purifycss is currently <span class="purifycss_status"><?=$status;?></span>.</p> <?php
+    /* TODO update purifycss status after ajax update */ ?>
+
+
     <p>
         <button class="button inspan button-primary <?=get_option('purifycss_livemode')=='1'?'active':''?>" id="live_button">
             <span class="enable"><?=__('Enable Live Mode','purifycss')?></span>
             <span class="disable"><?=__('Disable Live Mode','purifycss')?></span>
-        </button> 
+        </button>
     </p>
 
     <p>
