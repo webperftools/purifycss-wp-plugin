@@ -10,8 +10,17 @@ class Purifycss_Overrides extends Purifycss_ThirdPartyExtension {
         add_filter( 'purifycss_skip_enqueue_link_styles', function () {return true;});
         add_filter( 'purifycss_before_final_print', array($this, 'modify_final_print'));
         add_action( 'purifycss_after_replace_all_styles', function() {
+            // wp_enqueue_style('full-purify', $matching_css, array(), false, 'all' );
+        });
+        add_action('wp_footer', function() {
             $matching_css = $this->get_matching_css_for_current_url();
-            wp_enqueue_style('full-purify', $matching_css, array(), false, 'all' );
+            echo <<<HTML
+<script>
+var cb=function(){var l=document.createElement('link');l.rel='stylesheet';l.href='$matching_css';var h=document.getElementsByTagName('head')[0];h.parentNode.insertBefore(l,h);}; 
+var raf=requestAnimationFrame||mozRequestAnimationFrame||webkitRequestAnimationFrame||msRequestAnimationFrame;
+if(raf){raf(cb)}else{window.addEventListener('load',cb)}
+</script>
+HTML;
         });
     }
 
