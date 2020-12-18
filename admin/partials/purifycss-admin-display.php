@@ -84,6 +84,11 @@
        </div>
     </div>
 
+   <p class="expand-click2"> <span class="dashicons dashicons-arrow-right"></span> <span class="clickable"><?=__('Exclude Urls / Disables PurifyCSS on these URLs','purifycss')?> </span> </p>
+   <div class="d-none pl-5 expand-block2">
+      <textarea class="html_editor" name="" id="purifycss_exclude_urls_text" cols="100" rows="10" autocomplete="off"><?=get_option('purifycss_excluded_urls')?></textarea>
+   </div>
+
     <p>
         <button class="button button-primary" id="save_button"><?=__('Save settings','purifycss')?></button>
     </p>

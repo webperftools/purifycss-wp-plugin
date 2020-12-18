@@ -42,13 +42,16 @@ class Purifycss {
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
 
 		$this->loader->add_action( 'admin_menu',$plugin_admin, 'add_settings_page' );
-		$this->loader->add_action( 'admin_init',$plugin_admin, 'register_settings' );
+        $this->loader->add_action( 'admin_init',$plugin_admin, 'register_settings' );
 
-		$this->loader->add_action( 'wp_ajax_purifycss_livemode',$plugin_admin, 'actionLivemode' );
+        $this->loader->add_action( 'admin_bar_menu', $plugin_admin, 'add_admin_bar_menu' , 2000);
+
+        $this->loader->add_action( 'wp_ajax_purifycss_livemode',$plugin_admin, 'actionLivemode' );
 		$this->loader->add_action( 'wp_ajax_purifycss_testmode',$plugin_admin, 'actionTestmode' );
 		$this->loader->add_action( 'wp_ajax_purifycss_activate',$plugin_admin, 'actionActivate' );
 		$this->loader->add_action( 'wp_ajax_purifycss_getcss',$plugin_admin, 'actionGetCSS' );
 		$this->loader->add_action( 'wp_ajax_purifycss_savecss',$plugin_admin, 'actionSaveCSS' );
+
 
 
         add_filter( 'pre_set_site_transient_update_plugins', array( $plugin_updater, 'check_plugins_updates' ) );

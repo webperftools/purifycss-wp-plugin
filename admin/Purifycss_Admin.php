@@ -17,6 +17,55 @@ class Purifycss_Admin {
 		require_once 'partials/'.$this->plugin_name.'-admin-display.php';
 	}
 
+	private function getPurifyData($url) {
+        foreach (PurifycssHelper::get_pages_files_mapping() as $pcfile) {
+            if (untrailingslashit( $pcfile->url) === $url) {
+                return $pcfile;
+            };
+        }
+        return false;
+    }
+
+	public function add_admin_bar_menu() {
+        global $wp_admin_bar, $wp;
+
+        $color = '#eee';
+        if (get_option('purifycss_livemode')=='1') { $status = 'on'; $statusLabel = "Live mode on"; }
+        else if (get_option('purifycss_testmode')=='1') { $status = 'test'; $statusLabel = "Test mode on"; $color = 'silver'; }
+        else { $status = 'off'; $statusLabel = "Purifycss is not active"; $color = 'gray';}
+
+        $menu_id = 'purifycss';
+        $wp_admin_bar->add_menu(array('id' => $menu_id, 'title' => "<span style='color: $color'>PurifyCSS</span>", 'href' => admin_url( 'options-general.php?page=purifycss-plugin' )));
+        $wp_admin_bar->add_menu(array('parent' => $menu_id, 'title' => "<span style='color: $color'>$statusLabel</span>", 'id' => 'purifycss-status'));
+
+        $url = untrailingslashit(home_url( $wp->request ));
+        error_log($url);
+        error_log(strpos($url, '/wp-admin/'));
+        if (strpos($url, '/wp-admin/') === false) {
+            if (PurifycssHelper::isExcluded($url)) {
+                $wp_admin_bar->add_menu(array('parent' => $menu_id, 'title' => "This URL is excluded", 'id' => 'purifycss-excluded'));
+            } else {
+                $data = $this->getPurifyData($url);
+                if ($data->used != "") {
+                    $wp_admin_bar->add_menu(array('parent' => $menu_id, 'title' => "PurifyCSS: ".$data->used, 'id' => 'purifycss-used'));
+                }
+                if ($data->criticalcss != "") {
+                    $criticalSize = strlen($data->criticalcss);
+                    $criticalSize = round($criticalSize/1024,1)."kb";
+                    $wp_admin_bar->add_menu(array('parent' => $menu_id, 'title' => "Critical CSS: ".$criticalSize, 'id' => 'purifycss-critical'));
+                }
+                error_log(print_r($data, 1));
+
+
+
+
+            }
+        }
+
+        $wp_admin_bar->add_menu(array('parent' => $menu_id, 'title' => "Settings", 'id' => 'purifycss-settings', 'href' => admin_url( 'options-general.php?page=purifycss-plugin' )));
+
+    }
+
 	public function register_settings(){
 		// register API key of plugin
 		register_setting( $this->plugin_name, "purifycss_api_key", 'string' );
@@ -26,10 +75,11 @@ class Purifycss_Admin {
 	}
 
 	public function actionSaveCSS(){
-		$key    = get_option('purifycss_api_key');
-		$html   = base64_encode($_POST['customhtml']);
-		$css    = ($_POST['editedcss']);
-		$msg 	= '';
+		$key            = get_option('purifycss_api_key');
+		$html           = base64_encode($_POST['customhtml']);
+		$excludeUrls    = $_POST['excludeUrls'];
+		$css            = $_POST['editedcss'];
+		$msg 	        = '';
 		// result msg for display in div block
 		$resmsg = '';
 		// result of function execution
@@ -43,6 +93,8 @@ class Purifycss_Admin {
 
 		// save html code
 		update_option( 'purifycss_customhtml', $html );
+        update_option( 'purifycss_excluded_urls', $excludeUrls );
+
 		// save css code
 
 		$result   = true;

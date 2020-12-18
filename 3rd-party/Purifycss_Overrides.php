@@ -18,6 +18,9 @@ class Purifycss_Overrides extends Purifycss_ThirdPartyExtension {
     private function get_matching_css_for_current_url() {
         global $wp;
         $url = untrailingslashit(home_url( $wp->request ));
+
+        if (PurifycssHelper::isExcluded($url)) return false;
+
         foreach ($this->public->files_perpage as $pcfile) {
             if (untrailingslashit( $pcfile->url) === $url) return $pcfile->css;
         }
@@ -57,10 +60,7 @@ class Purifycss_Overrides extends Purifycss_ThirdPartyExtension {
         if (!$criticalCss) return $wpHTML;
         $criticalCss = "\n<!--critical css--><style>".$criticalCss."</style>";
         $wpHTML = str_replace('</title>', '</title>'.$criticalCss, $wpHTML);
-
-        error_log("Rubik strpos: ". strpos($wpHTML, "https://fonts.googleapis.com/css?family=Rubik"));
         $wpHTML = $this->async_css( $wpHTML );
-
         return $wpHTML;
     }
 

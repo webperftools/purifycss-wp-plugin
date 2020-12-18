@@ -42,11 +42,8 @@ require plugin_dir_path( __FILE__ ) . 'includes/Purifycss.php';
  * @since    1.0.0
  */
 function run_purifycss() {
-
 	$plugin = new Purifycss();
 	$plugin->run();
-	
-
 }
 run_purifycss();
 

@@ -30,7 +30,8 @@ jQuery(document).ready(function($){
 		
 
 		$('.expand-click').off('click').on('click', toogletext_click );
-		
+		$('.expand-click2').off('click').on('click', toogletext_click2 );
+
 
 	}
 
@@ -46,8 +47,9 @@ jQuery(document).ready(function($){
 		}else{
 			customhtml = $('#customhtml_text').val();
 		}
+		let excludeUrls = $('#purifycss_exclude_urls_text').val();
 
-		sendAjax( { action:'purifycss_savecss', customhtml:customhtml, editedcss:purified_css.codemirror.doc.getValue() }, (data)=>{
+		sendAjax( { action:'purifycss_savecss', customhtml:customhtml, excludeUrls:excludeUrls, editedcss:purified_css.codemirror.doc.getValue() }, (data)=>{
 
 			window.scroll({
 				top: 0, 
@@ -67,11 +69,12 @@ jQuery(document).ready(function($){
 		}else{
 			customhtml = $('#customhtml_text').val();
 		}
-		sendAjax( { action:'purifycss_getcss', customhtml:customhtml }, (data)=>{
+		let excludeUrls = $('#purifycss_exclude_urls_text').val();
+
+		sendAjax( { action:'purifycss_getcss', customhtml:customhtml, excludeUrls:excludeUrls }, (data)=>{
 			console.log(data);
 			$('.result-block').html("Result: "+data.resmsg).show();
 			purified_css.codemirror.doc.setValue(data.styles);
-
 
 			$('.editor-container').hide();
 
@@ -130,7 +133,18 @@ jQuery(document).ready(function($){
 			$('.expand-block').addClass('d-none');
 			$('.expand-click .dashicons').removeClass('dashicons-arrow-down').addClass('dashicons-arrow-right');
 		}
-	} 
+	}
+
+	function toogletext_click2(ev){
+		$('.expand-click2').toggleClass('active');
+		if ( $('.expand-click2').hasClass('active') ){
+			$('.expand-block2').removeClass('d-none');
+			$('.expand-click2 .dashicons').removeClass('dashicons-arrow-right').addClass('dashicons-arrow-down');
+		}else{
+			$('.expand-block2').addClass('d-none');
+			$('.expand-click2 .dashicons').removeClass('dashicons-arrow-down').addClass('dashicons-arrow-right');
+		}
+	}
 
 	/**
 	 * Activate button click to enable live mode

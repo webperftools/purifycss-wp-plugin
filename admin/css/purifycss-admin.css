@@ -3,7 +3,9 @@
  * included in this file.
  */
 
- .expand-click{
+ .expand-click,
+ .expand-click2
+ {
      text-decoration: dashed;
      cursor: pointer;
  }

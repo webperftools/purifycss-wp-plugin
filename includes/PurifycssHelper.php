@@ -182,4 +182,14 @@ class PurifycssHelper {
         return plugin_dir_url( __DIR__ ) . self::$cache_dir;
     }
 
+    public static function isExcluded($url) {
+        $excludedUrls = get_option('purifycss_excluded_urls');
+        foreach (explode($excludedUrls,"\n") as $exclUrl) {
+            if ($exclUrl === $url) return true;
+        }
+        return false;
+    }
+
+
+
 }
