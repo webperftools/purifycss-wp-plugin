@@ -1,6 +1,13 @@
 <div class="purifycss-body">
     <h1>PurifyCSS</h1>
 
+   <?php
+      if(isset($_COOKIE['purifycss_api_host'])) {
+         echo "<strong style='color:#b00;font-size:16px;'>Warning! Using custom API host: ".$_COOKIE['purifycss_api_host']."</strong>. ".
+              "<a href=\"javascript:document.cookie='purifycss_api_host=;path=/;domain=.webperftools.com;expires=Thu, 01 Jan 1970 00:00:01 GMT'\">Remove cookie</a>";
+      }
+   ?>
+
     <?php
     $status = "";
 

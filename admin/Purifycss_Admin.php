@@ -66,8 +66,7 @@ class Purifycss_Admin {
 
 	public function actionGetCSS(){
 		$option = "purifycss_css";
-		$url    = 'https://bfc6b7749edb.ngrok.io/api/purify';
-		// $url    = 'https://purifycss.online/api/purify';
+		$url    = $this->get_api_host().'/api/purify';
 		$key    = get_option('purifycss_api_key');
 		$html   = base64_encode($_POST['customhtml']);
 		$msg 	= '';
@@ -173,9 +172,16 @@ class Purifycss_Admin {
 		}
 	}
 
+	public function get_api_host() {
+	    if (isset($_COOKIE['purifycss_api_host'])) {
+            return $_COOKIE['purifycss_api_host'];
+        }
+        return "https://purifycss.online";
+    }
+
 	public function actionActivate(){
 		$option = "purifycss_api_key";
-		$url    = 'https://purifycss.online/api/validate';
+		$url    = $this->get_api_host().'/api/validate';
 		$key    = esc_attr($_POST['key']);
 
 		$msg 	= '';
