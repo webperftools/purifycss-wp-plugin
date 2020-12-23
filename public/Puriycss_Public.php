@@ -22,6 +22,8 @@ class Purifycss_Public {
     }
 
 	function replace_all_styles() {
+	    if (PurifycssHelper::isExcluded()) return;
+
         $skip = apply_filters('purifycss_skip_replace_link_styles', false);
         if ($skip) return;
 

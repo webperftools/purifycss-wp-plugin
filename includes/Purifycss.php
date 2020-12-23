@@ -59,10 +59,7 @@ class Purifycss {
     }
 
 	private function define_public_hooks() {
-        global $wp;
-        $current_url = is_object($wp) ? untrailingslashit(home_url( $wp->request )) : null;
-
-		if ( PurifycssHelper::is_enabled($current_url) ){
+		if ( PurifycssHelper::is_enabled() ){
 
             $this->loader->add_action( 'wp_print_styles', $this->public, 'before_wp_print_styles', 0);
             $this->loader->add_action( 'wp_print_styles', $this->public, 'after_wp_print_styles', PHP_INT_MAX);

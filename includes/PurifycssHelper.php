@@ -18,7 +18,6 @@ class PurifycssHelper {
         if (self::force_enabled()) return true;
         if (self::force_disabled()) return false;
 
-        if (self::isExcluded($current_url)) return false;
         if (self::check_test_mode()) return true;
         if (self::check_live_mode()) return true;
 
@@ -39,8 +38,10 @@ class PurifycssHelper {
         return false;
     }
 
-    public static function isExcluded($url) {
-        if ($url === null) return false;
+    public static function isExcluded() {
+        global $wp;
+        $url = home_url($wp->request);
+
         $excludedUrls = get_option('purifycss_excluded_urls');
         foreach (explode("\n",$excludedUrls) as $exclUrl) {
             if (untrailingslashit($exclUrl) === untrailingslashit($url)) return true;

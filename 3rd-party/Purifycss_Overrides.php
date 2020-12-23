@@ -28,7 +28,7 @@ HTML;
         global $wp;
         $url = untrailingslashit(home_url( $wp->request ));
 
-        if (PurifycssHelper::isExcluded($url)) return false;
+        if (PurifycssHelper::isExcluded()) return false;
 
         foreach ($this->public->files_perpage as $pcfile) {
             if (untrailingslashit( $pcfile->url) === $url) return $pcfile->css;
@@ -65,6 +65,8 @@ HTML;
     }
 
     public function modify_final_print($wpHTML) {
+        if (PurifycssHelper::isExcluded()) return $wpHTML;
+
         $criticalCss = $this->get_critical_css_for_current_url();
         if (!$criticalCss) return $wpHTML;
         $criticalCss = "\n<!--critical css--><style>".$criticalCss."</style>";
@@ -86,6 +88,11 @@ HTML;
         return false;
     }
 
+
+    /*
+     * TODO: fix preload when media is not "all"
+     * <link rel='preload'   href='https://dev.amplus.ch/wp-content/plugins/woocommerce/assets/css/woocommerce-smallscreen.css?ver=4.8.0' as="style" onload="this.onload=null;this.rel='stylesheet'" media='only screen and (max-width: 768px)' />
+     * */
     public function async_css( $buffer ) {
         $css_pattern = '/(?=<link[^>]*\s(rel\s*=\s*[\'"]stylesheet["\']))<link[^>]*\shref\s*=\s*[\'"]([^\'"]+)[\'"](.*)>/iU';
 

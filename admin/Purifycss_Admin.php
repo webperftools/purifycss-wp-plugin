@@ -40,7 +40,7 @@ class Purifycss_Admin {
 
         $url = untrailingslashit(home_url( $wp->request ));
         if (strpos($url, '/wp-admin/') === false) {
-            if (PurifycssHelper::isExcluded($url)) {
+            if (PurifycssHelper::isExcluded()) {
                 $wp_admin_bar->add_menu(array('parent' => $menu_id, 'title' => "This URL is excluded", 'id' => 'purifycss-excluded'));
             } else {
                 $data = $this->getPurifyData($url);
