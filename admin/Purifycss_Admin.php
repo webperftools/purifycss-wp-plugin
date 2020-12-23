@@ -39,8 +39,6 @@ class Purifycss_Admin {
         $wp_admin_bar->add_menu(array('parent' => $menu_id, 'title' => "<span style='color: $color'>$statusLabel</span>", 'id' => 'purifycss-status'));
 
         $url = untrailingslashit(home_url( $wp->request ));
-        error_log($url);
-        error_log(strpos($url, '/wp-admin/'));
         if (strpos($url, '/wp-admin/') === false) {
             if (PurifycssHelper::isExcluded($url)) {
                 $wp_admin_bar->add_menu(array('parent' => $menu_id, 'title' => "This URL is excluded", 'id' => 'purifycss-excluded'));
@@ -54,11 +52,6 @@ class Purifycss_Admin {
                     $criticalSize = round($criticalSize/1024,1)."kb";
                     $wp_admin_bar->add_menu(array('parent' => $menu_id, 'title' => "Critical CSS: ".$criticalSize, 'id' => 'purifycss-critical'));
                 }
-                error_log(print_r($data, 1));
-
-
-
-
             }
         }
 
@@ -175,7 +168,7 @@ class Purifycss_Admin {
 
 				wp_send_json([
                     'status'=>'ERR',
-                    'msg'=>$msg==''?__('Error by CSS generated','purifycss'):$msg,
+                    'msg'=> $msg=='' ? __('Error while generating CSS','purifycss') : $msg,
                     'resmsg'=>$resmsg,
                     'resp'=>$response,
                     'livemode' => get_option('purifycss_livemode'),

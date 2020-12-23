@@ -14,10 +14,11 @@ class PurifycssHelper {
         return "";
     }
 
-    public static function is_enabled() {
+    public static function is_enabled($current_url = null) {
         if (self::force_enabled()) return true;
         if (self::force_disabled()) return false;
 
+        if (self::isExcluded($current_url)) return false;
         if (self::check_test_mode()) return true;
         if (self::check_live_mode()) return true;
 
@@ -38,6 +39,14 @@ class PurifycssHelper {
         return false;
     }
 
+    public static function isExcluded($url) {
+        if ($url === null) return false;
+        $excludedUrls = get_option('purifycss_excluded_urls');
+        foreach (explode("\n",$excludedUrls) as $exclUrl) {
+            if (untrailingslashit($exclUrl) === untrailingslashit($url)) return true;
+        }
+        return false;
+    }
 
     static public function get_css_file(){
         $file = self::get_cache_dir_path() . self::$style ;
@@ -181,15 +190,5 @@ class PurifycssHelper {
     public static function get_cache_dir_url() {
         return plugin_dir_url( __DIR__ ) . self::$cache_dir;
     }
-
-    public static function isExcluded($url) {
-        $excludedUrls = get_option('purifycss_excluded_urls');
-        foreach (explode($excludedUrls,"\n") as $exclUrl) {
-            if ($exclUrl === $url) return true;
-        }
-        return false;
-    }
-
-
 
 }

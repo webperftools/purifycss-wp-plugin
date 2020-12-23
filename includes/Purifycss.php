@@ -59,8 +59,10 @@ class Purifycss {
     }
 
 	private function define_public_hooks() {
+        global $wp;
+        $current_url = is_object($wp) ? untrailingslashit(home_url( $wp->request )) : null;
 
-		if ( PurifycssHelper::is_enabled() ){
+		if ( PurifycssHelper::is_enabled($current_url) ){
 
             $this->loader->add_action( 'wp_print_styles', $this->public, 'before_wp_print_styles', 0);
             $this->loader->add_action( 'wp_print_styles', $this->public, 'after_wp_print_styles', PHP_INT_MAX);
@@ -78,11 +80,9 @@ class Purifycss {
 
             $this->loader->add_filter( 'template_redirect', $this->public, 'start_html_buffer', PHP_INT_MAX );
 			$this->loader->add_filter( 'wp_footer', $this->public, 'end_html_buffer', PHP_INT_MAX );
-        }
-        $this->loader->add_filter( 'wp_footer', $this->public, 'debug_enqueued_styles', PHP_INT_MAX);
-
-
-        $this->thirdparty_hooks();
+            $this->loader->add_filter( 'wp_footer', $this->public, 'debug_enqueued_styles', PHP_INT_MAX);
+            $this->thirdparty_hooks();
+		}
 	}
 
 	public function run() {
