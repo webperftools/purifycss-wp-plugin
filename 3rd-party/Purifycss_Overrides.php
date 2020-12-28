@@ -7,6 +7,7 @@ TODO: move these settings into core and make them toggleable through admin optio
 class Purifycss_Overrides extends Purifycss_ThirdPartyExtension {
 
     public function run() {
+        add_filter( 'purifycss_skip_replace_link_styles', array($this, 'skip_replace_link_styles'));
         add_filter( 'purifycss_skip_enqueue_link_styles', function () {return true;});
         add_filter( 'purifycss_before_final_print', array($this, 'modify_final_print'));
         add_action( 'purifycss_after_replace_all_styles', function() {
@@ -22,6 +23,10 @@ if(raf){raf(cb)}else{window.addEventListener('load',cb)}
 </script>
 HTML;
         });
+    }
+    public function skip_replace_link_styles() {
+        $css = $this->get_matching_css_for_current_url();
+        return !$css;
     }
 
     private function get_matching_css_for_current_url() {

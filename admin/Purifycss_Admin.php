@@ -44,13 +44,17 @@ class Purifycss_Admin {
                 $wp_admin_bar->add_menu(array('parent' => $menu_id, 'title' => "This URL is excluded", 'id' => 'purifycss-excluded'));
             } else {
                 $data = $this->getPurifyData($url);
-                if ($data->used != "") {
-                    $wp_admin_bar->add_menu(array('parent' => $menu_id, 'title' => "PurifyCSS: ".$data->used, 'id' => 'purifycss-used'));
-                }
-                if ($data->criticalcss != "") {
-                    $criticalSize = strlen($data->criticalcss);
-                    $criticalSize = round($criticalSize/1024,1)."kb";
-                    $wp_admin_bar->add_menu(array('parent' => $menu_id, 'title' => "Critical CSS: ".$criticalSize, 'id' => 'purifycss-critical'));
+                if (is_object($data)) {
+                    if ($data->used != "") {
+                        $wp_admin_bar->add_menu(array('parent' => $menu_id, 'title' => "PurifyCSS: ".$data->used, 'id' => 'purifycss-used'));
+                    }
+                    if ($data->criticalcss != "") {
+                        $criticalSize = strlen($data->criticalcss);
+                        $criticalSize = round($criticalSize/1024,1)."kb";
+                        $wp_admin_bar->add_menu(array('parent' => $menu_id, 'title' => "Critical CSS: ".$criticalSize, 'id' => 'purifycss-critical'));
+                    }
+                } else {
+                    $wp_admin_bar->add_menu(array('parent' => $menu_id, 'title' => "No data for this page", 'id' => 'purifycss-nodata'));
                 }
             }
         }
