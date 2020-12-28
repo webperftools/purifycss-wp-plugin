@@ -118,7 +118,7 @@ class PurifycssHelper {
         PurifycssDb::drop_pages_table();
         PurifycssDb::create_pages_table();
 
-        PurifycssDb::add_pages($html);
+        self::add_pages($html);
 
         return;
     }
