@@ -3,51 +3,55 @@
  * included in this file.
  */
 
- .expand-click,
- .expand-click2
- {
-     text-decoration: dashed;
-     cursor: pointer;
- }
+.expand-click,
+.expand-click2 {
+   text-decoration: dashed;
+   cursor: pointer;
+}
 
- .clickable{
-     border-bottom: 1px dashed gray;
- }
+.clickable {
+   border-bottom: 1px dashed gray;
+}
 
- .d-none{
-     display:none;
- }
+.d-none {
+   display: none;
+}
 
- .pl-5{
-     padding-left:2rem;
- }
+.pl-5 {
+   padding-left: 2rem;
+}
 
- .mr-3 {margin-right: 1rem !important; }
- .ml-3 {margin-left: 1rem !important;}
+.mr-3 {
+   margin-right: 1rem !important;
+}
 
- .green-text{
-    color:green;
- }
+.ml-3 {
+   margin-left: 1rem !important;
+}
+
+.green-text {
+   color: green;
+}
 
 .btn.disabled, .btn:disabled {
-    opacity: .65;
-    pointer-events: none;
+   opacity: .65;
+   pointer-events: none;
 }
 
-.inspan > span, .inspan.active span.enable{
-    display: none;
+.inspan > span, .inspan.active span.enable {
+   display: none;
 }
 
-.inspan span.enable{
-    display: inline;
+.inspan span.enable {
+   display: inline;
 }
 
-.inspan.active span.disable{
-    display: inline;
+.inspan.active span.disable {
+   display: inline;
 }
 
-.activated-text .dashicons{
-    line-height:30px;
+.activated-text .dashicons {
+   line-height: 30px;
 }
 
 .file-mapping-container {
@@ -63,4 +67,16 @@
 
 .purified-result-item:first-of-type {
    border-top: 1px solid lightgray
+}
+
+#wp-admin-bar-purifycss-runsingle .ab-item span{
+   display: inline-block;
+   border: 1px solid silver;
+   border-radius: 3px;
+   margin-bottom: 10px;
+   padding: 2px 10px
+}
+#wp-admin-bar-purifycss-runsingle .ab-item span:hover {
+   color: white;
+   border-color: white;
 }

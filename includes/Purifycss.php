@@ -45,12 +45,16 @@ class Purifycss {
         $this->loader->add_action( 'admin_init',$plugin_admin, 'register_settings' );
 
         $this->loader->add_action( 'admin_bar_menu', $plugin_admin, 'add_admin_bar_menu' , 2000);
+        $this->loader->add_action( 'wp_after_admin_bar_render', $plugin_admin, 'enqueue_adminbar_scripts');
 
         $this->loader->add_action( 'wp_ajax_purifycss_livemode',$plugin_admin, 'actionLivemode' );
 		$this->loader->add_action( 'wp_ajax_purifycss_testmode',$plugin_admin, 'actionTestmode' );
 		$this->loader->add_action( 'wp_ajax_purifycss_activate',$plugin_admin, 'actionActivate' );
 		$this->loader->add_action( 'wp_ajax_purifycss_getcss',$plugin_admin, 'actionGetCSS' );
 		$this->loader->add_action( 'wp_ajax_purifycss_savecss',$plugin_admin, 'actionSaveCSS' );
+
+		$this->loader->add_action( 'wp_ajax_purifycss_getcss_single',$plugin_admin, 'actionGetCssForSinglePage' );
+		$this->loader->add_action( 'wp_ajax_purifycss_clear_single',$plugin_admin, 'actionClearForSinglePage' );
 
 
 

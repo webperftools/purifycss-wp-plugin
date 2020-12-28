@@ -53,8 +53,10 @@ class Purifycss_Admin {
                         $criticalSize = round($criticalSize/1024,1)."kb";
                         $wp_admin_bar->add_menu(array('parent' => $menu_id, 'title' => "Critical CSS: ".$criticalSize, 'id' => 'purifycss-critical'));
                     }
+                    $wp_admin_bar->add_menu(array('parent' => $menu_id, 'title' => "<span style='color: red'>Clear data for this URL</span>", 'id' => 'purifycss-clearsingle', 'href' => '#'));
                 } else {
                     $wp_admin_bar->add_menu(array('parent' => $menu_id, 'title' => "No data for this page", 'id' => 'purifycss-nodata'));
+                    $wp_admin_bar->add_menu(array('parent' => $menu_id, 'title' => "<span style='color: red'>Rerun for this URL</span>", 'id' => 'purifycss-runsingle', 'href' => '#'));
                 }
             }
         }
@@ -221,6 +223,63 @@ class Purifycss_Admin {
 		}
 	}
 
+	public function actionGetCssForSinglePage(){
+	    $url    = $_POST['url']; // url for current page...
+        $url    = self::normalizeUrl($url);
+
+        $apiurl = $this->get_api_host().'/api/purify';
+        $key    = get_option('purifycss_api_key');
+        $html   = get_option('purifycss_customhtml');
+
+        $params = [
+            'timeout' =>300,
+            'body'=>[
+                'url'      => [$url],
+                "source"   => 'wp-plugin',
+                "options"  => ['crawl'=>false],
+                "htmlCode" => $html,
+                "key"      => $key
+            ]
+
+        ];
+
+        $response = wp_remote_post( $apiurl, $params );
+
+        if ( is_wp_error( $response ) ) {
+            wp_send_json([
+                'status' => 'Failed',
+                'msg' => __('CSS generation failed','purifycss'),
+                'purifycss_response' => json_encode($response)
+            ]);
+            return;
+        }
+
+        $_rsp = json_decode($response['body'], true);
+
+        PurifycssHelper::add_pages($_rsp['html']);
+
+        wp_send_json([
+            'status' => 'OK',
+            'msg' => __('CSS generation successful','purifycss'),
+            'purifycss_response' => json_encode($response)
+        ]);
+    }
+
+
+    public function actionClearForSinglePage(){
+        $url    = $_POST['url']; // url for current page...
+        $url    = self::normalizeUrl($url);
+
+	    PurifycssDb::clear_url($url);
+
+        wp_send_json(['status' => 'OK']);
+    }
+
+    public function enqueue_adminbar_scripts() {
+	    $ajaxurl = json_encode(admin_url( 'admin-ajax.php' ));
+        echo "<script>var purifyData = {ajaxurl:$ajaxurl};</script><script src='".plugin_dir_url( __FILE__ ) . 'js/purifycss-adminbar.js'."'></script>";
+    }
+
 	public function get_api_host() {
 	    if (isset($_COOKIE['purifycss_api_host'])) {
             return $_COOKIE['purifycss_api_host'];
@@ -344,4 +403,10 @@ class Purifycss_Admin {
         return $result;
     }
 
+    private static function normalizeUrl($url) {
+	    $parts = explode("#", $url); // remove hash
+        $url = $parts[0];
+
+	    return $url;
+    }
 }

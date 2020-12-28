@@ -114,6 +114,16 @@ class PurifycssHelper {
     }
 
     static public function save_pages_to_db($html){
+
+        PurifycssDb::drop_pages_table();
+        PurifycssDb::create_pages_table();
+
+        PurifycssDb::add_pages($html);
+
+        return;
+    }
+
+    static public function add_pages($html){
         $todb   = [];
         foreach ($html as $_obj){
             $page_url = $_obj['url'];
@@ -140,12 +150,7 @@ class PurifycssHelper {
             ];
         }
 
-        PurifycssDb::drop_pages_table();
-        PurifycssDb::create_pages_table();
-
         PurifycssDb::insert_pages($todb);
-
-        return;
     }
 
     static public function get_css_id_by_content($content) {

@@ -102,6 +102,17 @@ class PurifycssDb {
             //or error_log('Failed insert_pages: '.str_replace(",","\n",$wpdb->last_error." ".$wpdb->last_query));
     }
 
+    public static function clear_url($url) {
+        global $wpdb;
+        $table_name = $wpdb->prefix ."purifycss_pages";
+
+        $url_trimmed = untrailingslashit($url); // workaround //  TODO: normalize urls before insert
+
+        $res = $wpdb->query("DELETE FROM $table_name WHERE `url` = '$url' OR `url` = '$url_trimmed'");
+        error_log("clear_url: ".$url);
+        error_log(print_r($res,1));
+    }
+
     public static function get_all() {
         global $wpdb;
         $table_name = $wpdb->prefix ."purifycss";
