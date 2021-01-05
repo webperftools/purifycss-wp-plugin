@@ -138,7 +138,7 @@ class Purifycss_Public {
         global $wp_styles;
 
         if (PurifycssHelper::is_debug()) {
-            echo "<table style='font-size:11px;line-height:1;background:white;color:black;border: 1px solid black;margin: 10px;'>";
+            echo "<table style='font-size:11px;line-height:1;background:white;color:black;border:1px solid black;margin:10px;position:relative;z-index:999'>";
             foreach( $wp_styles->queue as $style ) {
                 if (strpos($style, 'purified') != false) continue;
 
