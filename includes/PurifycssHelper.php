@@ -15,6 +15,7 @@ class PurifycssHelper {
     }
 
     public static function is_enabled($current_url = null) {
+        if (self::is_customizer()) return false;
         if (self::force_enabled()) return true;
         if (self::force_disabled()) return false;
 
@@ -47,6 +48,11 @@ class PurifycssHelper {
             if (untrailingslashit($exclUrl) === untrailingslashit($url)) return true;
         }
         return false;
+    }
+
+    private static function is_customizer() {
+        global $wp_customize;
+        return isset( $wp_customize );
     }
 
     static public function get_css_file(){
