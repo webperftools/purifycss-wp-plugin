@@ -141,10 +141,11 @@ class Purifycss_Public {
 
     private function isWhitelistedStyle($src) {
 	    $default_whitelist = ["admin-bar", "purified", "purifycss"];
-	    $skipCssFiles = get_option('purifycss_skip_css_files');
+	    $skipCssFiles = get_option('purifycss_skip_css_files', "");
 	    $whitelist = array_merge($default_whitelist, explode("\n",$skipCssFiles) );
 
 	    foreach ($whitelist as $regex) {
+	        if ($regex === "") continue;
 	        if (is_numeric(strpos($src, $regex))) { return true; } // exact match
 	        if (preg_match("/".$regex."/im", $src)) { return true; } // regex match
         }
