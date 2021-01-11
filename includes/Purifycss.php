@@ -2,125 +2,55 @@
 
 class Purifycss {
 
-	protected $loader;
-	protected $plugin_name;
 	protected $public;
-	protected $version;
-	protected $latest_version;
 
 	public function __construct() {
-		$this->version = defined('PURIFYCSS_VERSION') ? PURIFYCSS_VERSION : '1.0.0';
-		$this->plugin_name = 'purifycss';
+	    error_log('Purifycss init');
 
         $this->load_dependencies();
 
-		$this->public = new Purifycss_Public( $this->get_plugin_name(), $this->get_version() );
+		$this->public = new Purifycss_Public();
 
 		$this->define_admin_hooks();
-		$this->define_public_hooks();
+		$this->public->define_hooks();
 
 	}
 
 	private function load_dependencies() {
-        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/PurifycssLoader.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/PurifycssDb.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/Purifycss_Admin.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/Purifycss_Updater.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/Puriycss_Public.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/PurifycssHelper.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/PurifycssDebugger.php';
 
-		$this->loader = new Purifycss_Loader();
 	}
 
 
 	private function define_admin_hooks() {
 
-		$plugin_admin = new Purifycss_Admin( $this->get_plugin_name(), $this->get_version() );
-        $plugin_updater = new Purifycss_Updater( $this->get_plugin_name(), $this->get_version() );
+		$plugin_admin = new Purifycss_Admin();
+        $plugin_updater = new Purifycss_Updater();
 
-		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
-		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
+		add_action('admin_enqueue_scripts', array($plugin_admin, 'enqueue_styles') );
+		add_action('admin_enqueue_scripts', array($plugin_admin, 'enqueue_scripts') );
 
-		$this->loader->add_action( 'admin_menu',$plugin_admin, 'add_settings_page' );
-        $this->loader->add_action( 'admin_init',$plugin_admin, 'register_settings' );
+		add_action('admin_menu',array($plugin_admin, 'add_settings_page') );
+        add_action('admin_init',array($plugin_admin, 'register_settings') );
 
-        $this->loader->add_action( 'admin_bar_menu', $plugin_admin, 'add_admin_bar_menu' , 2000);
-        $this->loader->add_action( 'wp_after_admin_bar_render', $plugin_admin, 'enqueue_adminbar_scripts');
+        add_action('admin_bar_menu', array($plugin_admin, 'add_admin_bar_menu') , 2000);
+        add_action('wp_after_admin_bar_render',array( $plugin_admin, 'enqueue_adminbar_scripts'));
 
-        $this->loader->add_action( 'wp_ajax_purifycss_livemode',$plugin_admin, 'actionLivemode' );
-		$this->loader->add_action( 'wp_ajax_purifycss_testmode',$plugin_admin, 'actionTestmode' );
-		$this->loader->add_action( 'wp_ajax_purifycss_activate',$plugin_admin, 'actionActivate' );
-		$this->loader->add_action( 'wp_ajax_purifycss_getcss',$plugin_admin, 'actionGetCSS' );
-		$this->loader->add_action( 'wp_ajax_purifycss_savecss',$plugin_admin, 'actionSaveCSS' );
+        add_action('wp_ajax_purifycss_livemode',array($plugin_admin, 'actionLivemode') );
+		add_action('wp_ajax_purifycss_testmode',array($plugin_admin, 'actionTestmode') );
+		add_action('wp_ajax_purifycss_activate',array($plugin_admin, 'actionActivate') );
+		add_action('wp_ajax_purifycss_getcss',array($plugin_admin, 'actionGetCSS') );
+		add_action('wp_ajax_purifycss_savecss',array($plugin_admin, 'actionSaveCSS') );
 
-		$this->loader->add_action( 'wp_ajax_purifycss_getcss_single',$plugin_admin, 'actionGetCssForSinglePage' );
-		$this->loader->add_action( 'wp_ajax_purifycss_clear_single',$plugin_admin, 'actionClearForSinglePage' );
+		add_action('wp_ajax_purifycss_getcss_single', array($plugin_admin, 'actionGetCssForSinglePage'));
+		add_action('wp_ajax_purifycss_clear_single', array($plugin_admin, 'actionClearForSinglePage'));
 
-
-
-        add_filter( 'pre_set_site_transient_update_plugins', array( $plugin_updater, 'check_plugins_updates' ) );
-
+        add_filter('pre_set_site_transient_update_plugins', array( $plugin_updater, 'check_plugins_updates' ) );
     }
 
-	private function define_public_hooks() {
-		if ( PurifycssHelper::is_enabled() ){
-
-            $this->loader->add_action( 'wp_print_styles', $this->public, 'before_wp_print_styles', 0);
-            $this->loader->add_action( 'wp_print_styles', $this->public, 'after_wp_print_styles', PHP_INT_MAX);
-
-
-            $usingAPI = true; // TODO enable using the plugin without API license
-            if ($usingAPI) {
-                $this->loader->add_action( 'wp_print_styles', $this->public, 'replace_all_styles', PHP_INT_MAX - 1 );
-            } else {
-                $this->loader->add_action( 'wp_print_styles', $this->public, 'replace_all_styles', PHP_INT_MAX - 1 );
-                $this->loader->add_action( 'wp_print_styles', $this->public, 'enqueue_purified_css_file', PHP_INT_MAX - 1 );
-            }
-
-            // $this->loader->add_action( 'style_loader_src', $plugin_public, 'replace_styles', PHP_INT_MAX );
-
-            $this->loader->add_filter( 'template_redirect', $this->public, 'start_html_buffer', PHP_INT_MAX );
-			$this->loader->add_filter( 'wp_footer', $this->public, 'end_html_buffer', PHP_INT_MAX );
-            $this->loader->add_filter( 'wp_footer', $this->public, 'debug_enqueued_styles', PHP_INT_MAX);
-            $this->thirdparty_hooks();
-		}
-	}
-
-	public function run() {
-		$this->loader->run();
-	}
-
-	public function get_plugin_name() {
-		return $this->plugin_name;
-	}
-
-	public function get_loader() {
-		return $this->loader;
-	}
-
-
-	public function get_version() {
-		return $this->version;
-	}
-
-    private function thirdparty_hooks() {
-        require_once plugin_dir_path( dirname( __FILE__ ) ) . '3rd-party/Purifycss_ThirdPartyExtension.php';
-        require_once plugin_dir_path( dirname( __FILE__ ) ) . '3rd-party/Purifycss_Autoptimize.php';
-        require_once plugin_dir_path( dirname( __FILE__ ) ) . '3rd-party/Purifycss_Elementor.php';
-        require_once plugin_dir_path( dirname( __FILE__ ) ) . '3rd-party/Purifycss_W3TotalCache.php';
-        require_once plugin_dir_path( dirname( __FILE__ ) ) . '3rd-party/Purifycss_WpRocket.php';
-        require_once plugin_dir_path( dirname( __FILE__ ) ) . '3rd-party/Purifycss_Overrides.php';
-
-        $third_parties = array(
-            new Purifycss_Elementor($this->loader, $this->public),
-            new Purifycss_Autoptimize($this->loader, $this->public),
-            new Purifycss_W3TotalCache($this->loader, $this->public),
-            new Purifycss_WpRocket($this->loader, $this->public),
-            new Purifycss_Overrides($this->loader, $this->public)
-        );
-
-        foreach ($third_parties as $plugin) {
-            $plugin->run();
-        }
-    }
 }

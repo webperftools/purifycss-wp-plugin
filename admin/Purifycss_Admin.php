@@ -1,20 +1,15 @@
 <?php
 
 class Purifycss_Admin {
-	private $plugin_name;
-	private $version;
 
-	public function __construct( $plugin_name, $version ) {
-		$this->plugin_name = $plugin_name;
-		$this->version = $version;
-	}
+	public function __construct() { }
 
 	public function add_settings_page(){
 		add_options_page( 'PurifyCSS', 'PurifyCSS', 'manage_options', 'purifycss-plugin', [$this,'render_plugin_settings_page'] );
 	}
 
 	public function render_plugin_settings_page(){
-		require_once 'partials/'.$this->plugin_name.'-admin-display.php';
+		require_once 'partials/purifycss-admin-display.php';
 	}
 
 	private function getPurifyData($url) {
@@ -53,10 +48,10 @@ class Purifycss_Admin {
                         $criticalSize = round($criticalSize/1024,1)."kb";
                         $wp_admin_bar->add_menu(array('parent' => $menu_id, 'title' => "Critical CSS: ".$criticalSize, 'id' => 'purifycss-critical'));
                     }
-                    $wp_admin_bar->add_menu(array('parent' => $menu_id, 'title' => "<span style='color: red'>Clear data for this URL</span>", 'id' => 'purifycss-clearsingle', 'href' => '#'));
+                    $wp_admin_bar->add_menu(array('parent' => $menu_id, 'title' => "<span style='color: red'>Re-run for this URL</span>", 'id' => 'purifycss-rerunsingle', 'href' => '#'));
                 } else {
                     $wp_admin_bar->add_menu(array('parent' => $menu_id, 'title' => "No data for this page", 'id' => 'purifycss-nodata'));
-                    $wp_admin_bar->add_menu(array('parent' => $menu_id, 'title' => "<span style='color: red'>Rerun for this URL</span>", 'id' => 'purifycss-runsingle', 'href' => '#'));
+                    $wp_admin_bar->add_menu(array('parent' => $menu_id, 'title' => "<span style='color: red'>Run for this URL</span>", 'id' => 'purifycss-runsingle', 'href' => '#'));
                 }
             }
         }
@@ -67,16 +62,17 @@ class Purifycss_Admin {
 
 	public function register_settings(){
 		// register API key of plugin
-		register_setting( $this->plugin_name, "purifycss_api_key", 'string' );
+		register_setting( 'purifycss', "purifycss_api_key", 'string' );
 
 		// register Livemode of plugin
-		register_setting( $this->plugin_name, "purifycss_livemode", 'string' );
+		register_setting( 'purifycss', "purifycss_livemode", 'string' );
 	}
 
 	public function actionSaveCSS(){
 		$key            = get_option('purifycss_api_key');
 		$html           = base64_encode($_POST['customhtml']);
 		$excludeUrls    = $_POST['excludeUrls'];
+        $skipCssFiles    = $_POST['skipCssFiles'];
 		$css            = $_POST['editedcss'];
 		$msg 	        = '';
 		// result msg for display in div block
@@ -93,6 +89,7 @@ class Purifycss_Admin {
 		// save html code
 		update_option( 'purifycss_customhtml', $html );
         update_option( 'purifycss_excluded_urls', $excludeUrls );
+        update_option( 'purifycss_skip_css_files', $skipCssFiles );
 
 		// save css code
 
@@ -116,14 +113,15 @@ class Purifycss_Admin {
 	}
 
 	public function actionGetCSS(){
-		$option = "purifycss_css";
-		$url    = $this->get_api_host().'/api/purify';
-		$key    = get_option('purifycss_api_key');
-		$html   = base64_encode($_POST['customhtml']);
-		$msg 	= '';
-		$css    = '';
-		$resmsg = '';
-		$result   = false;
+		$option         = "purifycss_css";
+		$url            = $this->get_api_host().'/api/purify';
+		$key            = get_option('purifycss_api_key');
+		$html           = base64_encode($_POST['customhtml']);
+		$msg 	        = '';
+		$css            = '';
+		$resmsg         = '';
+		$result         = false;
+        $skipCssFiles   = get_option('purifycss_skip_css_files');
 
 		if ( $key =='' ){
 			$msg = __("Invalid license key",'purifycss');
@@ -131,7 +129,7 @@ class Purifycss_Admin {
 			return;
 		}
 
-		update_option( 'purifycss_customhtml', $html );
+        update_option( 'purifycss_customhtml', $html );
 
         $this->set_onoff("purifycss_livemode", "0");
 
@@ -142,7 +140,10 @@ class Purifycss_Admin {
             'body'=>[
                 'url'      => [get_site_url()],
                 "source"   => 'wp-plugin',
-                "options"  => ['crawl'=>true],
+                "options"  => [
+                    'crawl'             => true,
+                    'whitelistCssFiles' => explode("\n",$skipCssFiles)
+                ],
                 "htmlCode" => base64_decode($html),
                 "key"      => $key
             ]
@@ -224,20 +225,24 @@ class Purifycss_Admin {
 	}
 
 	public function actionGetCssForSinglePage(){
-	    $url    = $_POST['url']; // url for current page...
-        $url    = self::normalizeUrl($url);
+	    $url            = $_POST['url']; // url for current page...
+        $url            = self::normalizeUrl($url);
 
-        $apiurl = $this->get_api_host().'/api/purify';
-        $key    = get_option('purifycss_api_key');
-        $html   = get_option('purifycss_customhtml');
+        $apiurl         = $this->get_api_host().'/api/purify';
+        $key            = get_option('purifycss_api_key');
+        $html           = get_option('purifycss_customhtml');
+        $skipCssFiles   = get_option('purifycss_skip_css_files');
 
         $params = [
             'timeout' =>300,
             'body'=>[
                 'url'      => [$url],
                 "source"   => 'wp-plugin',
-                "options"  => ['crawl'=>false],
-                "htmlCode" => $html,
+                "options"  => [
+                    'crawl'             => false,
+                    'whitelistCssFiles' => explode("\n",$skipCssFiles)
+                ],
+                "htmlCode" => base64_decode($html),
                 "key"      => $key
             ]
 
@@ -376,7 +381,7 @@ class Purifycss_Admin {
         $wpScreen = get_current_screen();
         if ($wpScreen->id != "settings_page_purifycss-plugin") return;
 
-		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/purifycss-admin.css', array(), $this->version, 'all' );
+		wp_enqueue_style( 'purifycss', plugin_dir_url( __FILE__ ) . 'css/purifycss-admin.css', array(), PURIFYCSS_VERSION, 'all' );
 	}
 
 	public function enqueue_scripts() {
@@ -386,13 +391,13 @@ class Purifycss_Admin {
         $settings_html = wp_enqueue_code_editor( array( 'type' => 'text/html' ) );
         $settings_css  = wp_enqueue_code_editor( array( 'type' => 'text/css' ) );
 
-        wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/purifycss-admin.js', array( 'jquery', 'code-editor' ), $this->version, true );
+        wp_enqueue_script( 'purifycss', plugin_dir_url( __FILE__ ) . 'js/purifycss-admin.js', array( 'jquery', 'code-editor' ), PURIFYCSS_VERSION, true );
 
 		if ( false === $settings_html ) {
 			return;
 		}
 
-		wp_localize_script( $this->plugin_name, 'customhtml_text_param', $settings_html  );
+		wp_localize_script( 'purifycss', 'customhtml_text_param', $settings_html  );
 		
 	}
 

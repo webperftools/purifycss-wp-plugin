@@ -1,172 +1,53 @@
 <?php
 
 class Purifycss_Public {
-    private $plugin_name;
-	private $version;
     public $files;
     public $files_perpage;
 
-	public function __construct( $plugin_name, $version ) {
-		$this->plugin_name = $plugin_name;
-		$this->version = $version;
+    public $purifycss_url = null;
+    public $criticalcss = null;
+
+	public function __construct( ) {
         $this->files = PurifycssHelper::get_css_files_mapping();
         $this->files_perpage = PurifycssHelper::get_pages_files_mapping();
 	}
 
-    function remove_all_styles(){
-        $this->replace_all_styles();
-    }
+	public function define_hooks() {
+        if ( PurifycssHelper::is_enabled() ){
 
-    function enqueue_purified_css_file() {
-        wp_enqueue_style('styles_purified', PurifycssHelper::get_css_file(), false, false, 'all' );
-    }
 
-	function replace_all_styles() {
-	    if (PurifycssHelper::isExcluded()) return;
+            // place internal hooks
+            add_filter('template_redirect', array($this, 'start_html_buffer'), PHP_INT_MAX );
+            add_filter('wp_footer', array($this, 'end_html_buffer'), PHP_INT_MAX );
 
-        $skip = apply_filters('purifycss_skip_replace_link_styles', false);
-        if ($skip) return;
-
-		global $wp_styles;
-		$need_to_enc = [];
-
-        foreach( $wp_styles->queue as $style ) {
-
-            if ( $style=='admin-bar' ){
-                continue;
-            }
-
-            if (strpos($style, 'purified') !== false) {
-                continue;
-            }
-
-            if (isset($_GET['keep']) && in_array($wp_styles->registered[$style]->handle,explode(",",$_GET['keep']))) {
-                continue;
-            }
-
-            $files = PurifycssDb::get_by_src($wp_styles->registered[$style]->src);
-            foreach ($files as $file){
-                // there is a purified version, so remove original inline styles and enqueue corresponding file
-
-                // check for inline extra
-                $inline_style = $wp_styles->print_inline_style($wp_styles->registered[$style]->handle, false);
-                $inline_style_purified = false;
-                if ($inline_style) {
-                    $inline_style_purified = $this->get_corresponding_css($inline_style);
+            // use hooks to perform purify actions
+            add_action('wp_print_styles', function () {
+                if ($this->should_run()) {
+                    $this->remove_enqueued_styles();
                 }
+            }, PHP_INT_MAX - 1);
 
-                // check for deps
-                $deps = [];
-                foreach ($wp_styles->registered[$style]->deps as $dep) {
-                    $newdep = $this->get_style_dependents($wp_styles->registered[$dep]->src);
-
-                    wp_register_style($dep.'_purified', $newdep);
-
-                    if ($newdep) {
-                        $deps[] = $dep.'_purified';
-                    } else {
-                        $deps[] = $dep;
-                    }
+            add_filter('purifycss_before_final_print', function($wpHTML) {
+                if ($this->should_run()) {
+                    $wpHTML = $this->remove_inline_styles($wpHTML);
+                    $wpHTML = $this->remove_stylesheet_tags($wpHTML);
+                    $wpHTML = $this->add_critical_css($wpHTML);
+                    $wpHTML = $this->add_purifycss_preload($wpHTML);
                 }
+                return $wpHTML;
+            }, PHP_INT_MAX );
+            /*
+            add_filter('purifycss_before_final_print', array($this, 'remove_inline_styles'), PHP_INT_MAX );
+            add_filter('purifycss_before_final_print', array($this, 'remove_stylesheet_tags'), PHP_INT_MAX );
+            add_filter('purifycss_before_final_print', array($this, 'add_critical_css'), PHP_INT_MAX );
+            add_filter('purifycss_before_final_print', array($this, 'add_purifycss_preload'), PHP_INT_MAX );
+            */
+
+            add_action('purifycss_after_final_print', array($this, 'print_debug'), PHP_INT_MAX );
 
 
 
-                wp_dequeue_style($wp_styles->registered[$style]->handle);
-
-                $skipEnqueue = apply_filters('purifycss_skip_enqueue_link_styles', false);
-                if (!$skipEnqueue) {
-                    wp_enqueue_style($wp_styles->registered[$style]->handle . '_purified', PurifycssHelper::get_cache_dir_url() . $file->css, $deps, false, 'all' );
-
-                    if ($inline_style_purified) {
-                        wp_add_inline_style($wp_styles->registered[$style]->handle . '_purified', $inline_style_purified);
-                    }
-                }
-
-                do_action('purifycss_after_replace_all_styles');
-            }
-        }
-
-	}
-
-	public function replace_styles($url) {
-	    if (isset($_GET['purifydebug'])) {
-	        echo "<pre>";
-            print_r($url);echo "\n";
-            print_r($this->get_matching_file($url));
-            echo "</pre>";
-        }
-	    return $url;
-    }
-
-	public function get_matching_file($identifier) {
-        if (!$this->files) {
-            $this->files = PurifycssDb::get_all();
-        }
-        foreach ($this->files as $file) {
-            if ( strpos($file->orig_css, $identifier) !== false ) return $file->css;
-        }
-        return false;
-    }
-
-    public function return_empty($arg) {
-	    return "";
-    }
-
-    public function before_wp_print_styles() {
-        ob_start();
-    }
-
-    public function after_wp_print_styles() {
-        $wpHTML = ob_get_clean();
-    }
-
-    public function debug_hooks() {
-	    $this->print_filters_for('wp_print_styles');
-    }
-
-    public function print_filters_for( $hook = '' ) {
-        global $wp_filter;
-        if( empty( $hook ) || !isset( $wp_filter[$hook] ) )
-            return;
-
-        print '<pre style="font-size:11px; color:black; line-height:1; font-weight:600">';
-        print_r( $wp_filter[$hook] );
-        print '</pre>';
-    }
-
-    public function debug_enqueued_styles() {
-        global $wp_styles;
-
-        if (PurifycssHelper::is_debug()) {
-            echo "<table style='font-size:11px;line-height:1;background:white;color:black;border:1px solid black;margin:10px;position:relative;z-index:999'>";
-            foreach( $wp_styles->queue as $style ) {
-                if (strpos($style, 'purified') != false) continue;
-
-                echo "<tr>";
-                echo "<td>$style</td>";
-                echo "<td>".$wp_styles->registered[$style]->src."</td>";
-                echo "<td>".$this->get_matching_file($wp_styles->registered[$style]->src)."</td>";
-                echo "</tr>";
-
-                foreach ($wp_styles->registered[$style]->deps as $dep) {
-                    echo "<tr>";
-                    echo "<td> └─ dep: $dep</td>";
-                    echo "<td>".$wp_styles->registered[$dep]->src."</td>";
-                    echo "<td>".$this->get_matching_file($wp_styles->registered[$dep]->src)."</td>";
-                    echo "</tr>";
-                }
-
-                $inline_style = $wp_styles->print_inline_style($wp_styles->registered[$style]->handle, false);
-                if ($inline_style) {
-                    $identifier = PurifycssHelper::get_css_id_by_content($inline_style);
-                    echo "<tr>";
-                    echo "<td> └─ inline</td>";
-                    echo "<td>".$identifier."... </td>";
-                    echo "<td>".$this->get_matching_file($identifier)."</td>";
-                    echo "</tr>";
-                }
-            }
-            echo "</table>";
+            $this->thirdparty_hooks();
         }
     }
 
@@ -175,111 +56,169 @@ class Purifycss_Public {
     }
 
     public function end_html_buffer(){
-        $skip = apply_filters('purifycss_skip_replace_inline_styles', false);
-
         global $wp_styles;
         $wpHTML = ob_get_clean();
 
+        $wpHTML = apply_filters('purifycss_before_final_print', $wpHTML);
+        echo $wpHTML;
+        do_action('purifycss_after_final_print');
+
+    }
+
+    public function should_run() {
+        if (PurifycssHelper::isExcluded()) return false;
+
+	    global $wp;
+        $url = untrailingslashit(home_url( $wp->request ));
+
+        foreach ($this->files_perpage as $pcfile) {
+            if (untrailingslashit( $pcfile->url) === $url) {
+                $this->purifycss_url = $pcfile->css;
+                $this->criticalcss = $pcfile->criticalcss;
+                PurifycssDebugger::log("  returing true");
+                return true;
+            }
+        }
+        PurifycssDebugger::log("  returing false - nothing found for current url: ".$url);
+        return false;
+    }
+
+    function remove_enqueued_styles() {
+        PurifycssDebugger::log("remove_enqueued_styles");
+        if (PurifycssHelper::isExcluded()) return;
+
+        $skip = apply_filters('purifycss_skip_remove_enqueued_styles', false);
+        if ($skip) return;
+
+        global $wp_styles;
+        foreach ($wp_styles->queue as $style) {
+
+            if ( $style=='admin-bar' ) continue;
+            if (strpos($style, 'purified') !== false) continue;
+            if ($this->isWhitelistedStyle($wp_styles->registered[$style]->src)) {
+                PurifycssDebugger::log("  skip (whitelist): ".$wp_styles->registered[$style]->src);
+                continue;
+            }
+
+            PurifycssDebugger::log("  dequeue style: ".$wp_styles->registered[$style]->src);
+            wp_dequeue_style($wp_styles->registered[$style]->handle);
+        }
+        do_action('purifycss_after_remove_enqueued_styles');
+    }
+
+
+    public function remove_stylesheet_tags($wpHTML) {
+        PurifycssDebugger::log("remove_stylesheet_tags");
+
+        $matches = '';
+        preg_match_all('/<link[^>]*>/im', $wpHTML, $matches);
+        foreach ($matches[0] as $key => $tag) {
+            if ( $this->isRelStylesheet($tag) || $this->isRelPreloadAsStyle($tag)) {
+                $hrefs = '';
+                preg_match('/ href=[\'"]([^\'"]+)[\'"]/im', $tag, $hrefs);
+
+                if ( count($hrefs) <= 1 ) { PurifycssDebugger::log("found link tag without href? ".$tag); continue; }
+                $src = $hrefs[1];
+
+                if (!$this->isWhitelistedStyle($src)) {
+                    PurifycssDebugger::log("  removing: $src");
+                    $wpHTML = str_replace($tag, "", $wpHTML);
+                } else {
+                    PurifycssDebugger::log("  skipping (whitelisted): $src");
+                }
+
+            }
+        }
+        return $wpHTML;
+    }
+
+    private function isRelStylesheet($tag) {
+        return preg_match('/rel=[\'"]stylesheet[\'"]/im', $tag);
+    }
+    private function isRelPreloadAsStyle($tag) {
+        return preg_match('/rel=[\'"]preload[\'"]/im', $tag) && preg_match('/as=[\'"]style[\'"]/im', $tag);
+    }
+
+    private function isWhitelistedStyle($src) {
+	    $default_whitelist = ["admin-bar", "purified", "purifycss"];
+	    $skipCssFiles = get_option('purifycss_skip_css_files');
+	    $whitelist = array_merge($default_whitelist, explode("\n",$skipCssFiles) );
+
+	    foreach ($whitelist as $regex) {
+	        if (is_numeric(strpos($src, $regex))) { return true; } // exact match
+	        if (preg_match("/".$regex."/im", $src)) { return true; } // regex match
+        }
+	    return false;
+    }
+
+    public function remove_inline_styles($wpHTML) {
+	    PurifycssDebugger::log("remove_inline_styles");
+
+        $skip = apply_filters('purifycss_skip_replace_inline_styles', false);
         if (!$skip) {
             $matches = '';
             preg_match_all('/<style[^>]*>([^<]*)<\/style>/im', $wpHTML, $matches);
 
-            foreach ($matches[1] as $key => $match) {
-                $css_identifier = PurifycssHelper::get_css_id_by_content($match);
-
-                $files = PurifycssDb::get_by_src($css_identifier);
-
-                foreach($files as $file) {
-                    // there is a purified version, so remove original inline styles and enqueue corresponding file
-                    // wp_enqueue_style('inline_style_'.$key.'_purified', plugin_dir_url( ( __FILE__ ) ).$file->css, array(), false, 'all' );
-
-                    $purifiedcss_inline = file_get_contents( PurifycssHelper::get_cache_dir_path() . $file->css );
-                    $wpHTML = str_replace($match,$purifiedcss_inline, $wpHTML);
-                }
+            foreach ($matches[0] as $tag) {
+                $wpHTML = str_replace($tag, "", $wpHTML);
             }
         }
-
-        //preg_replace('/<style[^>]*><\/style>/is','',$wpHTML);
-        $wpHTML = apply_filters('purifycss_before_final_print', $wpHTML);
-        echo $wpHTML;
+        return $wpHTML;
     }
 
-	public function enqueue_styles() {
-		// echo PurifycssHelper::get_css_file();
-		// get_option('purifycss_manual_css')==false
-		if ( true ){
-			$needed_styled = unserialize(get_option( "purifycss_neededstyles" ));
-			// print_r($needed_styled);
-			if ( is_array($needed_styled) && count($needed_styled)>0 ){
-				$i=0;
-				foreach ( $needed_styled as $style ){
-					wp_enqueue_style( $this->plugin_name.'_'.$i, $style, array(), $this->version, 'all' );
-					$i++;
-				}
-			}
+    public function add_critical_css($wpHTML) {
+        PurifycssDebugger::log("add_critical_css");
 
-			return;
+        $criticalCss = $this->criticalcss;
+        if (!$criticalCss) return $wpHTML;
+        $criticalCss = "\n\t<style id=\"critical-css\" type=\"text/css\">".$criticalCss."</style><!-- end critical css -->";
+        $wpHTML = str_replace('</title>', '</title>'.$criticalCss, $wpHTML);
+        return $wpHTML;
+    }
 
-			global $wp;
-			// $url = home_url(add_query_arg(array(), $wp->request));
-			// echo $url;
-			$files = PurifycssDb::get_by_src($url);
-			$i=0;
-			foreach ($files as $file){
-				// echo ($file->css);
-				wp_enqueue_style( $this->plugin_name.'_'.$i, PurifycssHelper::get_cache_dir_url() . $file->css, array(), $this->version, 'all' );
-				$i++;
-			}
-		} else {
-			wp_enqueue_style( $this->plugin_name, PurifycssHelper::get_css_file(), array(), $this->version, 'all' );
-		}
-	}
+    public function add_purifycss_async($wpHTML) {
+        PurifycssDebugger::log("add_purifycss_async");
+        $appendCode = "<script>var cb=function(){var l=document.createElement('link');l.rel='stylesheet';l.href='$this->purifycss_url';var h=document.getElementsByTagName('head')[0];h.parentNode.insertBefore(l,h);};var raf=requestAnimationFrame||mozRequestAnimationFrame||webkitRequestAnimationFrame||msRequestAnimationFrame;if(raf){raf(cb)}else{window.addEventListener('load',cb)}</script><noscript><link rel='stylesheet' href='$this->purifycss_url'/></noscript>";
+        return $wpHTML . $appendCode;
+    }
 
-	/**
-	 * Register the JavaScript for the public-facing side of the site.
-	 *
-	 * @since    1.0.0
-	 */
-	public function enqueue_scripts() {
+    public function add_purifycss($wpHTML) {
+        PurifycssDebugger::log("add_purifycss");
+        PurifycssDebugger::log("  purifycss url: ".$this->purifycss_url);
+        $appendCode = "<link id=\"purifycss\" rel=\"stylesheet\" href=\"$this->purifycss_url\" media=\"all\" />";
+        $wpHTML = str_replace('<!-- end critical css -->',"\n$appendCode",$wpHTML);
+        return $wpHTML;
+    }
 
-		/**
-		 * This function is provided for demonstration purposes only.
-		 *
-		 * An instance of this class should be passed to the run() function
-		 * defined in Purifycss_Loader as all of the hooks are defined
-		 * in that particular class.
-		 *
-		 * The Purifycss_Loader will then create the relationship
-		 * between the defined hooks and the functions defined in this
-		 * class.
-		 */
+    public function add_purifycss_preload($wpHTML) {
+        PurifycssDebugger::log("add_purifycss_preload");
+        PurifycssDebugger::log("  purifycss url: ".$this->purifycss_url);
 
-	}
+        $appendCode = "<link id=\"purifycss\" rel=\"preload\" as=\"style\" href=\"$this->purifycss_url\" media=\"all\" onload=\"this.rel='stylesheet'\" />";
+        $wpHTML = str_replace('<!-- end critical css -->',"\n\t$appendCode",$wpHTML);
+        return $wpHTML;
+    }
+    public function print_debug() {
+        PurifycssDebugger::print_debug_logs();
+    }
 
+    private function thirdparty_hooks() { // TODO simplify this by "autoloading" each file in 3rd-party dir
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . '3rd-party/Purifycss_ThirdPartyExtension.php';
 
-	public function get_corresponding_css($content) {
-        $css_identifier = PurifycssHelper::get_css_id_by_content($content);
-        $files = PurifycssDb::get_by_src($css_identifier);
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . '3rd-party/Purifycss_Autoptimize.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . '3rd-party/Purifycss_Elementor.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . '3rd-party/Purifycss_W3TotalCache.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . '3rd-party/Purifycss_WpRocket.php';
 
-        foreach($files as $file) {
-            return file_get_contents( PurifycssHelper::get_cache_dir_path() . $file->css );
+        $third_parties = array(
+            new Purifycss_Elementor($this),
+            new Purifycss_Autoptimize($this),
+            new Purifycss_W3TotalCache($this),
+            new Purifycss_WpRocket($this),
+        );
+
+        foreach ($third_parties as $plugin) {
+            $plugin->run();
         }
-
-        /*echo "<pre>";
-        print_r('ERROR: didnt find anything in DB for following inline css');
-        print_r($css_identifier);
-        echo "</pre>";*/
-        return $content;
     }
-
-    public function get_style_dependents($depsrc) {
-        $files = PurifycssDb::get_by_src($depsrc);
-
-        foreach($files as $file) {
-            return PurifycssHelper::get_cache_dir_url() . $file->css;
-        }
-
-        return false;
-    }
-
 }

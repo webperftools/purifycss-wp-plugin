@@ -2,13 +2,11 @@
 
 class Purifycss_Updater {
 
-    private $plugin_name;
     private $current_version;
     private $latest_version;
 
-    public function __construct( $plugin_name, $version ) {
-        $this->plugin_name = $plugin_name;
-        $this->current_version = $version;
+    public function __construct() {
+        $this->current_version = PURIFYCSS_VERSION;
         $this->latest_version = false;
     }
 

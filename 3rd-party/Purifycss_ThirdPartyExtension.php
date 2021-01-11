@@ -3,10 +3,8 @@
 
 abstract class Purifycss_ThirdPartyExtension {
     protected $public;
-    protected $loader;
 
-    public function __construct($loader, $public) {
-        $this->loader = $loader;
+    public function __construct($public) {
         $this->public = $public;
     }
 }

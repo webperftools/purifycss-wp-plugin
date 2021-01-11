@@ -31,6 +31,7 @@ jQuery(document).ready(function($){
 
 		$('.expand-click').off('click').on('click', toogletext_click );
 		$('.expand-click2').off('click').on('click', toogletext_click2 );
+		$('.expand-click3').off('click').on('click', toogletext_click3);
 
 
 	}
@@ -48,8 +49,15 @@ jQuery(document).ready(function($){
 			customhtml = $('#customhtml_text').val();
 		}
 		let excludeUrls = $('#purifycss_exclude_urls_text').val();
+		let skipCssFiles = $('#purifycss_skip_css_files_text').val();
 
-		sendAjax( { action:'purifycss_savecss', customhtml:customhtml, excludeUrls:excludeUrls, editedcss:purified_css.codemirror.doc.getValue() }, (data)=>{
+		sendAjax( {
+			action:'purifycss_savecss',
+			customhtml:customhtml,
+			excludeUrls:excludeUrls,
+			skipCssFiles:skipCssFiles,
+			editedcss:purified_css.codemirror.doc.getValue()
+		}, (data)=>{
 
 			window.scroll({
 				top: 0, 
@@ -143,6 +151,17 @@ jQuery(document).ready(function($){
 		}else{
 			$('.expand-block2').addClass('d-none');
 			$('.expand-click2 .dashicons').removeClass('dashicons-arrow-down').addClass('dashicons-arrow-right');
+		}
+	}
+
+	function toogletext_click3(ev){
+		$('.expand-click3').toggleClass('active');
+		if ( $('.expand-click3').hasClass('active') ){
+			$('.expand-block3').removeClass('d-none');
+			$('.expand-click3 .dashicons').removeClass('dashicons-arrow-right').addClass('dashicons-arrow-down');
+		}else{
+			$('.expand-block3').addClass('d-none');
+			$('.expand-click3 .dashicons').removeClass('dashicons-arrow-down').addClass('dashicons-arrow-right');
 		}
 	}
 

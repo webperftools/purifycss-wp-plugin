@@ -89,6 +89,12 @@
       <textarea class="html_editor" name="" id="purifycss_exclude_urls_text" cols="100" rows="10" autocomplete="off"><?=get_option('purifycss_excluded_urls')?></textarea>
    </div>
 
+   <p class="expand-click3"> <span class="dashicons dashicons-arrow-right"></span> <span class="clickable"><?=__('Skip CSS Files','purifycss')?> </span> </p>
+   <div class="d-none pl-5 expand-block3">
+      <textarea class="html_editor" name="" id="purifycss_skip_css_files_text" cols="100" rows="10" autocomplete="off"><?=get_option('purifycss_skip_css_files')?></textarea>
+   </div>
+
+
     <p>
         <button class="button button-primary" id="save_button"><?=__('Save settings','purifycss')?></button>
     </p>

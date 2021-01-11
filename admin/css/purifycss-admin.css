@@ -4,7 +4,9 @@
  */
 
 .expand-click,
-.expand-click2 {
+.expand-click2,
+.expand-click3,
+.dashed-pointer {
    text-decoration: dashed;
    cursor: pointer;
 }
