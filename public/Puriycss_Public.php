@@ -67,6 +67,7 @@ class Purifycss_Public {
 
     public function should_run() {
         if (PurifycssHelper::isExcluded()) return false;
+        if (!apply_filters('purifycss_should_run', true)) return false;
 
 	    global $wp;
         $url = untrailingslashit(home_url( $wp->request ));
@@ -210,12 +211,14 @@ class Purifycss_Public {
         require_once plugin_dir_path( dirname( __FILE__ ) ) . '3rd-party/Purifycss_Elementor.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . '3rd-party/Purifycss_W3TotalCache.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . '3rd-party/Purifycss_WpRocket.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . '3rd-party/Purifycss_Divi.php';
 
         $third_parties = array(
             new Purifycss_Elementor($this),
             new Purifycss_Autoptimize($this),
             new Purifycss_W3TotalCache($this),
             new Purifycss_WpRocket($this),
+            new Purifycss_Divi($this),
         );
 
         foreach ($third_parties as $plugin) {
