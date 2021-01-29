@@ -2,7 +2,7 @@
 
 class PurifycssHelper {
 
-    public static $cache_dir = 'generatedcss/';
+    public static $cache_dir = '/cache/purifycss/';
     public static $style = 'style.pure.css';
 
     static public function get_css() {
@@ -196,11 +196,14 @@ class PurifycssHelper {
     }
 
     public static function get_cache_dir_path() {
-        return plugin_dir_path( __DIR__ ) . self::$cache_dir;
+        return WP_CONTENT_DIR . self::$cache_dir;
     }
 
     public static function get_cache_dir_url() {
-        return plugin_dir_url( __DIR__ ) . self::$cache_dir;
+        return WP_CONTENT_URL . self::$cache_dir;
     }
 
+    public static function file_exists($filename) {
+        return is_file(PurifycssHelper::get_cache_dir_path() . $filename);
+    }
 }

@@ -2,10 +2,30 @@
     <h1>PurifyCSS</h1>
 
    <?php
-      if(isset($_COOKIE['purifycss_api_host'])) {
-         echo "<strong style='color:#b00;font-size:16px;'>Warning! Using custom API host: ".$_COOKIE['purifycss_api_host']."</strong>. ".
-              "<a href=\"javascript:document.cookie='purifycss_api_host=;path=/;domain=.webperftools.com;expires=Thu, 01 Jan 1970 00:00:01 GMT'\">Remove cookie</a>";
-      }
+
+
+      if (isset($_GET['setCustomApi']) || isset($_COOKIE['purifycss_api_host'])) { ?>
+         <script>
+            function setPurifyApiHost(){
+               const value = document.getElementById('purifycss_api_host').value;
+               const nextYear = new Date().getFullYear() + 1;
+               document.cookie=`purifycss_api_host=${value};path=/;domain=${window.location.hostname};expires=Sat, 01 Jan ${nextYear} 00:00:01 GMT`;
+               afterApiHostChange();
+            }
+            function clearPurifyApiHost() {
+               document.cookie=`purifycss_api_host=;path=/;domain=${window.location.hostname};expires=Thu, 01 Jan 1970 00:00:01 GMT`;
+               afterApiHostChange()
+            }
+            function afterApiHostChange() {
+               document.location.replace(document.location.href.replace('&setCustomApi',''));
+            }
+         </script>
+
+   Custom API URL:
+   <input type="text" style="width: 250px;" id="purifycss_api_host" placeholder="API URL" value="<?=$_COOKIE['purifycss_api_host']?>" />
+         <button class="button button-primary" onClick="setPurifyApiHost()">Set</button>
+         <button class="button button-primary" onClick="clearPurifyApiHost()">Clear</button>
+   <?php }
    ?>
 
     <?php
@@ -50,6 +70,8 @@
         </div>
 
         <p>
+            <button class="button button-primary mr-3" style="display:none" id="abort"><?=__('Abort job','purifycss')?></button>
+            <button class="button button-primary mr-3 " id="startJob"><?=__('Start job','purifycss')?></button>
             <button class="button button-primary mr-3 " id="css_button"><?=__('Get clean CSS code','purifycss')?></button>
             <?php
             if (function_exists('w3tc_config')) {
@@ -60,28 +82,7 @@
             }
             ?>
         </p>
-
        <div class="crawl-summary"></div>
-
-        <p class="result-block <?=get_option('purifycss_resultdata')!=''?'':'d-none'?>"><?=__('Result:','purifycss')?> <?=get_option('purifycss_resultdata')?> </p>
-
-       <div class="editor-container" style="display:none">
-          <p><?=__('Clean CSS code:','purifycss')?></p>
-         <textarea class="css_editor" name="" id="purified_css" cols="100" rows="10"><?=PurifycssHelper::get_css();?></textarea>
-       </div>
-       <div class="file-mapping-container">
-          <?php foreach (PurifycssHelper::get_css_files_mapping() as $key => $mapping) {?>
-              <div class="purified-result-item">
-                 <a href='<?=$mapping->orig_css;?>'><?=$mapping->orig_css;?></a><br>
-                 &middot; clean css file: <a target="_blank" href='<?=$mapping->css;?>'><?=$mapping->css_filename;?></a><br>
-                 &middot; <span style="display:inline-block;padding-right: 15px;">before: <strong><?=$mapping->before;?></strong></span>
-                 <span style="display:inline-block;padding-right: 15px;">after: <strong><?=$mapping->after;?></strong> </span>
-                 <span style="display:inline-block;padding-right: 15px;">used: <strong><?=$mapping->used;?></strong> </span>
-                 <span style="display:inline-block;padding-right: 15px;">unused: <strong><?=$mapping->unused;?></strong> </span>
-                 <br>
-               </div>
-          <?php } ?>
-       </div>
     </div>
 
    <p class="expand-click2"> <span class="dashicons dashicons-arrow-right"></span> <span class="clickable"><?=__('Exclude Urls / Disables PurifyCSS on these URLs','purifycss')?> </span> </p>

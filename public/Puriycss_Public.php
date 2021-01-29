@@ -173,6 +173,8 @@ class Purifycss_Public {
 
         $criticalCss = $this->criticalcss;
         if (!$criticalCss) return $wpHTML;
+
+        $criticalCss = file_get_contents(PurifycssHelper::get_cache_dir_path() . $criticalCss);
         $criticalCss = "\n\t<style id=\"critical-css\" type=\"text/css\">".$criticalCss."</style><!-- end critical css -->";
         $wpHTML = str_replace('</title>', '</title>'.$criticalCss, $wpHTML);
         return $wpHTML;

@@ -45,9 +45,11 @@ class Purifycss {
 		add_action('wp_ajax_purifycss_testmode',array($plugin_admin, 'actionTestmode') );
 		add_action('wp_ajax_purifycss_activate',array($plugin_admin, 'actionActivate') );
 		add_action('wp_ajax_purifycss_getcss',array($plugin_admin, 'actionGetCSS') );
-		add_action('wp_ajax_purifycss_savecss',array($plugin_admin, 'actionSaveCSS') );
+        add_action('wp_ajax_purifycss_savecss',array($plugin_admin, 'actionSaveCSS') );
+        add_action('wp_ajax_purifycss_startjob',array($plugin_admin, 'actionStartJob') );
+        add_action('wp_ajax_purifycss_jobstatus',array($plugin_admin, 'actionJobStatus') );
 
-		add_action('wp_ajax_purifycss_getcss_single', array($plugin_admin, 'actionGetCssForSinglePage'));
+        add_action('wp_ajax_purifycss_getcss_single', array($plugin_admin, 'actionGetCssForSinglePage'));
 		add_action('wp_ajax_purifycss_clear_single', array($plugin_admin, 'actionClearForSinglePage'));
 
         add_filter('pre_set_site_transient_update_plugins', array( $plugin_updater, 'check_plugins_updates' ) );

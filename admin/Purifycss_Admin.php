@@ -61,12 +61,96 @@ class Purifycss_Admin {
     }
 
 	public function register_settings(){
-		// register API key of plugin
 		register_setting( 'purifycss', "purifycss_api_key", 'string' );
-
-		// register Livemode of plugin
 		register_setting( 'purifycss', "purifycss_livemode", 'string' );
 	}
+
+	public function apiRequest($method, $route, $params = []) {
+        $apiUrl = $this->get_api_host().$route;
+        if ($method == 'GET') {
+            return wp_remote_get( $apiUrl );
+        } else {
+            return wp_remote_post( $apiUrl, $params );
+        }
+    }
+
+    public function actionStartJob(){
+        $params = [
+            'timeout' =>300,
+            'body'=>[
+                'url'      => [get_site_url()],
+                "source"   => 'wp-plugin',
+                "options"  => [
+                    'crawl'             => true,
+                    'whitelistCssFiles' => explode("\n",get_option('purifycss_skip_css_files'))
+                ],
+                "htmlCode" => $_POST['customhtml'],
+                "key"      => get_option('purifycss_api_key')
+            ]
+
+        ];
+        $response = $this->apiRequest('POST', '/api/create', $params);
+
+        if ( is_wp_error( $response ) ) {
+            $this->handleError($response);
+            return;
+        }
+
+        $responseBody = json_decode($response['body'], true);
+
+        update_option('purifycss_job_id', $responseBody['jobId']);
+        error_log('stored jobid:'.$responseBody['jobId']);
+
+        wp_send_json($response);
+    }
+
+    /** @param array|WP_Error $response */
+    private function handleError($response) {
+        $msg = $response->get_error_message();
+
+        $responseData = [
+            'status' => 'ERR',
+            'msg' => $msg == '' ? __('Error while generating CSS', 'purifycss') : $msg,
+            'resmsg' => $msg,
+            'apiResponse' => $response,
+        ];
+
+        wp_send_json($responseData, $response->get_error_code());
+    }
+
+    public function actionJobStatus(){
+        $jobId = $_GET['jobId'];
+        $response = $this->apiRequest('GET', "/api/status/$jobId");
+
+        $responseBody = json_decode($response['body'], true);
+        $storedStatus = get_option('purifycss_job_status');
+        //if ($storedStatus !== $responseBody['status']) {
+            update_option('purifycss_job_status', $responseBody['status']);
+            if ($responseBody['status'] == 'completed') {
+                $this->retrieveFiles($responseBody);
+                $this->storeData($responseBody);
+            }
+        //}
+
+        wp_send_json($responseBody);
+    }
+
+
+    private function retrieveFiles($responseBody) {
+        $cacheDir = PurifycssHelper::get_cache_dir_path();
+        if (!is_dir($cacheDir)) mkdir($cacheDir, 0755, true);
+
+        $jobId = $responseBody['jobId'];
+        file_put_contents("$cacheDir/$jobId.zip", file_get_contents($this->get_api_host()."/api/retrieve/$jobId/$jobId.zip"));
+
+        unzip_file("$cacheDir/$jobId.zip", $cacheDir);
+
+        error_log("files unzipped");
+    }
+
+    private function storeData($responseBody) {
+        PurifycssDb::insert_data($responseBody);
+    }
 
 	public function actionSaveCSS(){
 		$key            = get_option('purifycss_api_key');
@@ -224,7 +308,7 @@ class Purifycss_Admin {
 		}
 	}
 
-	public function actionGetCssForSinglePage(){
+    public function actionGetCssForSinglePage(){
 	    $url            = $_POST['url']; // url for current page...
         $url            = self::normalizeUrl($url);
 
@@ -270,7 +354,6 @@ class Purifycss_Admin {
         ]);
     }
 
-
     public function actionClearForSinglePage(){
         $url    = $_POST['url']; // url for current page...
         $url    = self::normalizeUrl($url);
@@ -295,6 +378,7 @@ class Purifycss_Admin {
 	public function actionActivate(){
 		$option = "purifycss_api_key";
 		$url    = $this->get_api_host().'/api/validate';
+		// $url    = 'https://purifycss.online/api/validate';
 		$key    = esc_attr($_POST['key']);
 
 		$msg 	= '';

@@ -26,6 +26,7 @@ jQuery(document).ready(function($){
 		$('#test_button').off('click').on('click', testbutton_click );
 		$('#activate_button').off('click').on('click', activatebutton_click );
 		$('#css_button').off('click').on('click', cssbutton_click );
+		$('#startJob').off('click').on('click', startJob_click );
 		$('#save_button').off('click').on('click', savebutton_click );
 		
 
@@ -66,20 +67,166 @@ jQuery(document).ready(function($){
 		} );
 	}
 
+	function isCodeMirror() {
+		return typeof(customhtml_text)!=='undefined' && typeof(customhtml_text.codemirror)!=='undefined';
+	}
+
+
+
+	function startJob_click(ev){
+		let customhtml = isCodeMirror() ? customhtml_text.codemirror.doc.getValue() : $('#customhtml_text').val();
+		let excludeUrls = $('#purifycss_exclude_urls_text').val();
+
+		const data = { action:'purifycss_startjob', customhtml, excludeUrls };
+		$.ajax({url: ajaxurl, method: "POST", data})
+			.done(handleStartjobResponse)
+			.fail(console.error)
+			.always(reEnableButtons);
+	}
+
+
+
+	function reEnableButtons() {
+			$('.purifycss-body .button').removeClass('disabled');
+	}
+
+	function handleStartjobResponse(data) {
+		if (!data) return handleError('failed. no data received.');
+		if (!data.response) return handleError(data);
+		if (data.response.code >= 400) return handleError(data);
+
+		console.log('purifycss_startjob callback:', data);
+
+		let body = null;
+		try {
+			body = JSON.parse(data.body);
+		} catch (e) { return handleError('An error ocurred. Unable to parse response.'); }
+
+		console.log("got jobId:",body.jobId);
+		startPollingJobStatus(body.jobId);
+	}
+
+	let pollingInterval;
+	function startPollingJobStatus(jobId) {
+		$("button#abort").show().on('click', finishPolling);
+
+		pollingInterval = setInterval(() => {
+			getJobStatus(jobId);
+		}, 1000);
+	}
+
+	function finishPolling(ev){
+		clearInterval(pollingInterval);
+		$("button#abort").hide();
+	}
+
+	let currReq = null;
+	window.getJobStatus = function(jobId) {
+		const data = { action: 'purifycss_jobstatus', jobId };
+		currReq = $.ajax({
+			url: ajaxurl,
+			method: "GET",
+			data,
+			//beforeSend : ()=>{ if (currReq != null) currReq.abort()}
+		})
+		.done(handleJobStatusResponse)
+		.fail(console.error)
+	}
+
+
+	function handleJobStatusResponse(data) {
+		if (!data) return handleError('failed. no data received.');
+		$('.crawl-summary').html(generateStatusHtml(data));
+		$(document).on('click','[data-toggle-details]', (ev)=>{
+			const $sub = $("[data-details-for-url='"+$(ev.target).text()+"']");
+			if ($sub.visible) $sub.hide()
+			else $sub.show();
+		});
+		if (data.status == 'completed') finishPolling();
+	}
+
+	function generateStatusHtml(data) {
+		console.log("generateStatusHtml", data);
+
+		let html = `<p>Status: ${data.status}</p>`;
+		if (!data.urls) return html;
+
+		html += `
+			<table class="jobStatus">
+				<tr>
+					<td class="text-right">#</td>
+					<td>URL</td>
+					<td class="text-center">Fetch<br />HTML</td>
+					<td class="text-center">Fetch<br />CSS</td>
+					<td class="text-center">Remove<br/>unused CSS</td>
+					<td class="text-center">Generate<br/>critical CSS</td>
+				</tr>
+		`;
+
+		data.urls.forEach(u => {
+			html += `
+				<tr>
+					<td class="text-right">${u.crawl.index}</td>
+					<td class="url"><div class="ellipsis" data-toggle-details>${u.url}</div></td>
+					<td class="text-center">${displayStatusOf(u.crawl)}</td>
+					<td class="text-center">${displayStatusOf(u.fullCss)}</td>
+					<td class="text-center">${displayStatusOf(u.purifyCss)}</td>
+					<td class="text-center">${displayStatusOf(u.criticalCss)}</td>
+				</tr>
+			`;
+			/*if (u.styles && u.styles.cssLinks) {
+				html += `
+				<tr style="display:none" data-details-for-url="${u.url}">
+					<td></td>
+					<td colspan="5">${generateUrlDetails(u)}</td>
+				</tr>
+				`
+			}*/
+		});
+		html += `
+			</table>
+		`;
+
+		return html;
+	}
+
+/*	function generateUrlDetails(urlData) {
+		return '<table class="details">' +
+			urlData.styles.cssLinks.map(link => `
+				<tr>
+					<td class="url"><div class="ellipsis">${link.href}</div></td>
+					<td>${link.status}</td>
+				</tr>
+			`).join('') +
+			'</table>';
+	}*/
+
+	function displayStatusOf(subprocess) {
+		if (!subprocess) return '';
+		if (!subprocess.status) return '';
+		switch (subprocess.status) {
+			case 'processing': return '<span class="dashicons dashicons-admin-generic rotate" style="color: darkcyan"></span>';
+			case 'enqueued': return '<span class="dashicons dashicons-clock" style="color: darkgrey"></span>';
+			case 'failed': return '<span class="dashicons dashicons-no" style="color: indianred"></span>';
+			case 'completed': return '<span class="dashicons dashicons-yes-alt" style="color: forestgreen"></span>';
+		}
+		return '';
+	}
+
+	function handleError(...data) {
+		console.error(...data);
+	}
+
+
 	/**
 	 * GetCSS button click to send request to get CSS
 	 * @param {event} ev 
 	 */
 	function cssbutton_click(ev){
-		let customhtml='';
-		if ( typeof(customhtml_text)!=='undefined' && typeof(customhtml_text.codemirror)!=='undefined' ){
-			customhtml = customhtml_text.codemirror.doc.getValue();
-		}else{
-			customhtml = $('#customhtml_text').val();
-		}
+		let customhtml = isCodeMirror() ? customhtml_text.codemirror.doc.getValue() : $('#customhtml_text').val();
 		let excludeUrls = $('#purifycss_exclude_urls_text').val();
 
-		sendAjax( { action:'purifycss_getcss', customhtml:customhtml, excludeUrls:excludeUrls }, (data)=>{
+		sendAjax( { action:'purifycss_getcss', customhtml, excludeUrls }, (data)=>{
 			console.log(data);
 			$('.result-block').html("Result: "+data.resmsg).show();
 			purified_css.codemirror.doc.setValue(data.styles);
@@ -224,7 +371,6 @@ jQuery(document).ready(function($){
 	 * @param {*} errorMsg 
 	 */
 	function sendAjax(param, callback=function(){}, errorMsg){
-		// block all buttons while ajax request sending
 		$('.purifycss-body .button').addClass('disabled');
 
 		$.ajax({
@@ -232,6 +378,7 @@ jQuery(document).ready(function($){
 			method: "POST",
 			data: param,
 		}).done( (data)=>{
+			console.log("done", data);
 			if ( data.status == 'OK' ){
 				callback(data);
 				// show notice

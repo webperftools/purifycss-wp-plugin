@@ -37,7 +37,7 @@ class PurifycssDb {
 				`after` varchar(20) NULL,
 				`used` varchar(20) NULL,
 				`unused` varchar(20) NULL,
-				`criticalcss` varchar(65535) NULL,
+				`criticalcss` varchar(512) NULL,
 				PRIMARY KEY (`id`)
 				) $charset_collate;";
 
@@ -99,7 +99,6 @@ class PurifycssDb {
         } );
 
         $wpdb->query("INSERT INTO $table_name (`url`, `css`, `before`, `after`, `used`, `unused`, `criticalcss`) VALUES ".join(',',$values).";");
-            //or error_log('Failed insert_pages: '.str_replace(",","\n",$wpdb->last_error." ".$wpdb->last_query));
     }
 
     public static function clear_url($url) {
@@ -130,6 +129,74 @@ class PurifycssDb {
         $table_name = $wpdb->prefix ."purifycss";
         $src = esc_sql($src);
         return $wpdb->get_results( "SELECT `css` from $table_name WHERE  `orig_css` LIKE '%$src%' ;" );
+    }
+
+    public static function insert_data($data) {
+        $values = [];
+
+        self::drop_pages_table();
+        self::create_pages_table();
+
+        foreach ($data['urls'] as $urlData) {
+            if ($urlData['crawl']['status'] == 'failed') continue;
+
+
+            $before = $urlData['fullCss']['stats']['bytes'];
+            $after = $urlData['purifyCss']['stats']['bytes'];
+            $values[] = [
+                'url' => $urlData['url'],
+                'css' => self::hasValidPurifyData($urlData) ? $urlData['purifyCss']['filename'] : '',
+                'before' => self::format($before),
+                'after' => self::format($after),
+                'used' => self::percent($after, $before),
+                'unused' => self::percent($before-$after, $before),
+                'criticalcss' => self::hasValidCriticalData($urlData) ? $urlData['criticalCss']['filename'] : '',
+            ];
+        }
+
+
+        global $wpdb;
+        $table_name = $wpdb->prefix ."purifycss_pages";
+
+        $values =  array_reduce( $values, function( $acc, $item ) {
+            $acc[] =" (".
+                "'".$item['url']."', ".
+                "'".$item['css']."', ".
+                "'".$item['before']."', ".
+                "'".$item['after']."', ".
+                "'".$item['used']."', ".
+                "'".$item['unused']."', ".
+                "'".$item['criticalcss']."' ".
+                ") ";
+            return $acc;
+        } );
+
+
+        $query = "INSERT INTO $table_name (`url`, `css`, `before`, `after`, `used`, `unused`, `criticalcss`) VALUES ".join(',',$values).";";
+        error_log($query);
+        $wpdb->query($query);
+
+    }
+
+    private static function hasValidPurifyData($urlData) {
+        return array_key_exists('purifyCss',$urlData)
+            && array_key_exists('filename', $urlData['purifyCss'])
+            && PurifycssHelper::file_exists($urlData['purifyCss']['filename']);
+    }
+
+    private static function hasValidCriticalData($urlData) {
+        return array_key_exists('criticalCss',$urlData)
+            && array_key_exists('filename', $urlData['criticalCss'])
+            && PurifycssHelper::file_exists($urlData['criticalCss']['filename']);
+    }
+
+    private static function format($bytes) {
+        return $bytes;
+    }
+
+    private static function percent($a, $b) {
+        if ($b == 0) return '-';
+        return round(100*$a/$b, 2)."%";
     }
 
 }

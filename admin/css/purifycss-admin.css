@@ -82,3 +82,66 @@
    color: white;
    border-color: white;
 }
+
+table.jobStatus {
+   font-size: 16px;
+}
+table.jobStatus td.url {
+   width: 400px;
+   max-width: 400px;
+
+}
+table.jobStatus .ellipsis {
+   width: 100%;
+   overflow: hidden;
+   text-overflow: ellipsis;
+   white-space: nowrap;
+}
+
+table.details {
+   font-size: 11px;
+   line-height: 0.9;
+}
+
+@-webkit-keyframes rotating /* Safari and Chrome */ {
+   from {
+      -webkit-transform: rotate(0deg);
+      -o-transform: rotate(0deg);
+      transform: rotate(0deg);
+   }
+   to {
+      -webkit-transform: rotate(360deg);
+      -o-transform: rotate(360deg);
+      transform: rotate(360deg);
+   }
+}
+@keyframes rotating {
+   from {
+      -ms-transform: rotate(0deg);
+      -moz-transform: rotate(0deg);
+      -webkit-transform: rotate(0deg);
+      -o-transform: rotate(0deg);
+      transform: rotate(0deg);
+   }
+   to {
+      -ms-transform: rotate(360deg);
+      -moz-transform: rotate(360deg);
+      -webkit-transform: rotate(360deg);
+      -o-transform: rotate(360deg);
+      transform: rotate(360deg);
+   }
+}
+.rotate {
+   -webkit-animation: rotating 1s linear infinite;
+   -moz-animation: rotating 1s linear infinite;
+   -ms-animation: rotating 1s linear infinite;
+   -o-animation: rotating 1s linear infinite;
+   animation: rotating 1s linear infinite;
+}
+
+.text-center {
+   text-align:center;
+}
+.text-right {
+   text-align: right;
+}
