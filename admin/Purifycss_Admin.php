@@ -89,7 +89,7 @@ class Purifycss_Admin {
             ]
 
         ];
-        $response = $this->apiRequest('POST', '/api/create', $params);
+        $response = $this->apiRequest('POST', '/create', $params);
 
         if ( is_wp_error( $response ) ) {
             $this->handleError($response);
@@ -120,7 +120,7 @@ class Purifycss_Admin {
 
     public function actionJobStatus(){
         $jobId = $_GET['jobId'];
-        $response = $this->apiRequest('GET', "/api/status/$jobId");
+        $response = $this->apiRequest('GET', "/status/$jobId");
 
         $responseBody = json_decode($response['body'], true);
         $storedStatus = get_option('purifycss_job_status');
@@ -141,7 +141,7 @@ class Purifycss_Admin {
         if (!is_dir($cacheDir)) mkdir($cacheDir, 0755, true);
 
         $jobId = $responseBody['jobId'];
-        file_put_contents("$cacheDir/$jobId.zip", file_get_contents($this->get_api_host()."/api/retrieve/$jobId/$jobId.zip"));
+        file_put_contents("$cacheDir/$jobId.zip", file_get_contents($this->get_api_host()."/retrieve/$jobId/$jobId.zip"));
 
         unzip_file("$cacheDir/$jobId.zip", $cacheDir);
 
@@ -372,7 +372,7 @@ class Purifycss_Admin {
 	    if (isset($_COOKIE['purifycss_api_host'])) {
             return $_COOKIE['purifycss_api_host'];
         }
-        return "https://purifycss.online";
+        return "https://api.purifycss.online";
     }
 
 	public function actionActivate(){
