@@ -120,15 +120,24 @@ jQuery(document).ready(function($){
 		$("button#abort").hide();
 	}
 
-	let currReq = null;
-	window.getJobStatus = function(jobId) {
+	function getGeneratedData(jobId) {
 		const data = { action: 'purifycss_jobstatus', jobId };
 		currReq = $.ajax({
-			url: 'https://api.purifycss.online/status/'+jobId, // ajaxurl,
+			url: ajaxurl,
 			method: "GET",
-			//data,
+			data,
 			//beforeSend : ()=>{ if (currReq != null) currReq.abort()}
 		})
+
+	}
+
+	let currReq = null;
+	window.getJobStatus = function(jobId) {
+		currReq = $.ajax({
+			url: purifyData.apiHost + '/status/'+jobId,
+			method: "GET",
+		})
+
 		.done(handleJobStatusResponse)
 		.fail(console.error)
 	}
@@ -142,7 +151,10 @@ jQuery(document).ready(function($){
 			if ($sub.visible) $sub.hide()
 			else $sub.show();
 		});
-		if (data.status == 'completed') finishPolling();
+		if (data.status === 'completed') {
+			finishPolling();
+			getGeneratedData(data.jobId);
+		}
 	}
 
 	function generateStatusHtml(data) {
@@ -189,17 +201,6 @@ jQuery(document).ready(function($){
 
 		return html;
 	}
-
-/*	function generateUrlDetails(urlData) {
-		return '<table class="details">' +
-			urlData.styles.cssLinks.map(link => `
-				<tr>
-					<td class="url"><div class="ellipsis">${link.href}</div></td>
-					<td>${link.status}</td>
-				</tr>
-			`).join('') +
-			'</table>';
-	}*/
 
 	function displayStatusOf(subprocess) {
 		if (!subprocess) return '';

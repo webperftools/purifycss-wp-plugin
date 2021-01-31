@@ -89,6 +89,9 @@ class Purifycss_Admin {
             ]
 
         ];
+
+        $this->set_onoff('purifycss_livemode', '0');
+
         $response = $this->apiRequest('POST', '/create', $params);
 
         if ( is_wp_error( $response ) ) {
@@ -370,7 +373,8 @@ class Purifycss_Admin {
 
     public function enqueue_adminbar_scripts() {
 	    $ajaxurl = json_encode(admin_url( 'admin-ajax.php' ));
-        echo "<script>var purifyData = {ajaxurl:$ajaxurl};</script><script src='".plugin_dir_url( __FILE__ ) . 'js/purifycss-adminbar.js'."'></script>";
+	    $apiHost = json_encode($this->get_api_host());
+        echo "<script>var purifyData = {ajaxurl:$ajaxurl, apiHost: $apiHost};</script><script src='".plugin_dir_url( __FILE__ ) . 'js/purifycss-adminbar.js'."'></script>";
     }
 
 	public function get_api_host() {
