@@ -122,6 +122,11 @@ class Purifycss_Admin {
         $jobId = $_GET['jobId'];
         $response = $this->apiRequest('GET', "/status/$jobId");
 
+        if (is_wp_error( $response ) ) {
+            wp_send_json([ 'status'=>'ERR', 'res' => $response ]);
+            return;
+        }
+
         $responseBody = json_decode($response['body'], true);
         $storedStatus = get_option('purifycss_job_status');
         //if ($storedStatus !== $responseBody['status']) {

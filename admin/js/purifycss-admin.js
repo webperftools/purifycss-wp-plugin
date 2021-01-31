@@ -124,9 +124,9 @@ jQuery(document).ready(function($){
 	window.getJobStatus = function(jobId) {
 		const data = { action: 'purifycss_jobstatus', jobId };
 		currReq = $.ajax({
-			url: ajaxurl,
+			url: 'https://api.purifycss.online/status/'+jobId, // ajaxurl,
 			method: "GET",
-			data,
+			//data,
 			//beforeSend : ()=>{ if (currReq != null) currReq.abort()}
 		})
 		.done(handleJobStatusResponse)
