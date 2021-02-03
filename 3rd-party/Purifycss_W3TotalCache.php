@@ -11,7 +11,6 @@ class Purifycss_W3TotalCache extends Purifycss_ThirdPartyExtension {
     }
 
     public function flush_cache(...$args) {
-        error_log("Purifycss: w3tc_flush_all");
         w3tc_flush_all();
         sleep(1); // ugly workaround to wait for flushing to take effect
     }

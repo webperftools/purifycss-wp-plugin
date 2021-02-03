@@ -108,8 +108,6 @@ class PurifycssDb {
         $url_trimmed = untrailingslashit($url); // workaround //  TODO: normalize urls before insert
 
         $res = $wpdb->query("DELETE FROM $table_name WHERE `url` = '$url' OR `url` = '$url_trimmed'");
-        error_log("clear_url: ".$url);
-        error_log(print_r($res,1));
     }
 
     public static function get_all() {
@@ -131,12 +129,12 @@ class PurifycssDb {
         return $wpdb->get_results( "SELECT `css` from $table_name WHERE  `orig_css` LIKE '%$src%' ;" );
     }
 
-    public static function insert_data($data) {
+    public static function insert_data($data, $single) {
         $values = [];
-
-        self::drop_pages_table();
-        self::create_pages_table();
-
+        if (!$single) {
+            self::drop_pages_table();
+            self::create_pages_table();
+        }
         foreach ($data['urls'] as $urlData) {
             if ($urlData['crawl']['status'] == 'failed') continue;
 
@@ -168,12 +166,18 @@ class PurifycssDb {
                 "'".$item['unused']."', ".
                 "'".$item['criticalcss']."' ".
                 ") ";
+
+
             return $acc;
         } );
 
-
+        if ($single) {
+            foreach ($data['urls'] as $urlData) {
+                $deleteQuery = "DELETE FROM $table_name WHERE `url` = '".$urlData['url']."'; ";
+                $wpdb->query($deleteQuery);
+            }
+        }
         $query = "INSERT INTO $table_name (`url`, `css`, `before`, `after`, `used`, `unused`, `criticalcss`) VALUES ".join(',',$values).";";
-        error_log($query);
         $wpdb->query($query);
 
     }

@@ -5,7 +5,6 @@ class Purifycss {
 	protected $public;
 
 	public function __construct() {
-	    error_log('Purifycss init');
 
         $this->load_dependencies();
 

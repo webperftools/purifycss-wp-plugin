@@ -111,7 +111,7 @@ jQuery(document).ready(function($){
 		$("button#abort").show().on('click', finishPolling);
 
 		pollingInterval = setInterval(() => {
-			getJobStatus(jobId);
+			getJobStatus(jobId, handleJobStatusResponse);
 		}, 1000);
 	}
 
@@ -132,21 +132,21 @@ jQuery(document).ready(function($){
 	}
 
 	let currReq = null;
-	window.getJobStatus = function(jobId) {
+	window.getJobStatus = function(jobId, cb) {
 		currReq = $.ajax({
 			url: purifyData.apiHost + '/status/'+jobId,
 			method: "GET",
+			beforeSend : ()=>{ if (currReq != null) currReq.abort()}
 		})
-
-		.done(handleJobStatusResponse)
+		.done(cb)
 		.fail(console.error)
-	}
+	};
 
 
 	function handleJobStatusResponse(data) {
 		if (!data) return handleError('failed. no data received.');
 		$('.crawl-summary').html(generateStatusHtml(data));
-		$(document).on('click','[data-toggle-details]', (ev)=>{
+		$(document).on('click','[data-toggle-details]', (ev)=>{ //ugly!
 			const $sub = $("[data-details-for-url='"+$(ev.target).text()+"']");
 			if ($sub.visible) $sub.hide()
 			else $sub.show();

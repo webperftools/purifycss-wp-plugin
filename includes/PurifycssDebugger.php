@@ -10,7 +10,6 @@ class PurifycssDebugger {
     }
 
     static public function log($msg) {
-        error_log($msg); // TODO push to message log
         self::$logs[] = $msg;
     }
 

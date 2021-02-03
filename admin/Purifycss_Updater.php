@@ -50,28 +50,23 @@ class Purifycss_Updater {
             $this->latest_version = file_get_contents('https://www.webperftools.com/dist/purifycss-latest-version.txt');
         }
         if (!$this->latest_version) {
-            error_log('Purifycss failed to get the latest version number?');
             return false;
         }
 
         $this->latest_version = trim($this->latest_version);
         $semver = explode('.',$this->latest_version);
         if (count($semver) !== 3) {
-            error_log('Purifycss latest_version number is invalid?'. $this->latest_version);
             return false;
         }
         if (!is_numeric($semver[2])) {
-            error_log('Purifycss latest_version number is invalid?'. $this->latest_version);
             return false;
         }
 
         $current_semver = explode('.',trim($this->current_version));
         if (count($current_semver) !== 3) {
-            error_log('Purifycss has an invalid version number? '.$this->current_version);
             return false;
         }
         if (!is_numeric($this->current_version[2])) {
-            error_log('Purifycss has an invalid version number? '.$this->current_version);
             return false;
         }
 

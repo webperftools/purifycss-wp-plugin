@@ -87,7 +87,6 @@ class Purifycss_Admin {
                 "htmlCode" => $_POST['customhtml'],
                 "key"      => get_option('purifycss_api_key')
             ]
-
         ];
 
         $this->set_onoff('purifycss_livemode', '0');
@@ -102,7 +101,6 @@ class Purifycss_Admin {
         $responseBody = json_decode($response['body'], true);
 
         update_option('purifycss_job_id', $responseBody['jobId']);
-        error_log('stored jobid:'.$responseBody['jobId']);
 
         wp_send_json($response);
     }
@@ -123,6 +121,7 @@ class Purifycss_Admin {
 
     public function actionJobStatus(){
         $jobId = $_GET['jobId'];
+        $single = isset($_GET['single']) ? $_GET['single'] : false;
         $response = $this->apiRequest('GET', "/status/$jobId");
 
         if (is_wp_error( $response ) ) {
@@ -136,13 +135,12 @@ class Purifycss_Admin {
             update_option('purifycss_job_status', $responseBody['status']);
             if ($responseBody['status'] == 'completed') {
                 $this->retrieveFiles($responseBody);
-                $this->storeData($responseBody);
+                $this->storeData($responseBody, $single);
             }
         //}
 
         wp_send_json($responseBody);
     }
-
 
     private function retrieveFiles($responseBody) {
         $cacheDir = PurifycssHelper::get_cache_dir_path();
@@ -152,12 +150,10 @@ class Purifycss_Admin {
         file_put_contents("$cacheDir/$jobId.zip", file_get_contents($this->get_api_host()."/retrieve/$jobId/$jobId.zip"));
 
         unzip_file("$cacheDir/$jobId.zip", $cacheDir);
-
-        error_log("files unzipped");
     }
 
-    private function storeData($responseBody) {
-        PurifycssDb::insert_data($responseBody);
+    private function storeData($responseBody, $single) {
+        PurifycssDb::insert_data($responseBody, $single);
     }
 
 	public function actionSaveCSS(){
@@ -317,49 +313,28 @@ class Purifycss_Admin {
 	}
 
     public function actionGetCssForSinglePage(){
-	    $url            = $_POST['url']; // url for current page...
-        $url            = self::normalizeUrl($url);
-
-        $apiurl         = $this->get_api_host().'/api/purify';
-        $key            = get_option('purifycss_api_key');
-        $html           = get_option('purifycss_customhtml');
-        $skipCssFiles   = get_option('purifycss_skip_css_files');
-
         $params = [
             'timeout' =>300,
             'body'=>[
-                'url'      => [$url],
+                'url'      => [self::normalizeUrl($_POST['url'])], // url for current page...
                 "source"   => 'wp-plugin',
                 "options"  => [
-                    'crawl'             => false,
-                    'whitelistCssFiles' => explode("\n",$skipCssFiles)
+                    'crawlerOptions'    => ['maxdepth' => 0],
+                    'whitelistCssFiles' => explode("\n",get_option('purifycss_skip_css_files'))
                 ],
-                "htmlCode" => base64_decode($html),
-                "key"      => $key
+                "htmlCode" => base64_decode(get_option('purifycss_customhtml')),
+                "key"      => get_option('purifycss_api_key')
             ]
-
         ];
 
-        $response = wp_remote_post( $apiurl, $params );
+        $response = $this->apiRequest('POST', '/create', $params);
 
         if ( is_wp_error( $response ) ) {
-            wp_send_json([
-                'status' => 'Failed',
-                'msg' => __('CSS generation failed','purifycss'),
-                'purifycss_response' => json_encode($response)
-            ]);
+            $this->handleError($response);
             return;
         }
 
-        $_rsp = json_decode($response['body'], true);
-
-        PurifycssHelper::add_pages($_rsp['html']);
-
-        wp_send_json([
-            'status' => 'OK',
-            'msg' => __('CSS generation successful','purifycss'),
-            'purifycss_response' => json_encode($response)
-        ]);
+        wp_send_json($response); // pass jobId to frontend script - to start polling status
     }
 
     public function actionClearForSinglePage(){
