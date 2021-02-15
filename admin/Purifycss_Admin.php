@@ -143,13 +143,20 @@ class Purifycss_Admin {
     }
 
     private function retrieveFiles($responseBody) {
+        global $wp_filesystem;
+        if (!$wp_filesystem) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            WP_Filesystem();
+        }
+
         $cacheDir = PurifycssHelper::get_cache_dir_path();
         if (!is_dir($cacheDir)) mkdir($cacheDir, 0755, true);
 
         $jobId = $responseBody['jobId'];
         file_put_contents("$cacheDir/$jobId.zip", file_get_contents($this->get_api_host()."/retrieve/$jobId/$jobId.zip"));
 
-        unzip_file("$cacheDir/$jobId.zip", $cacheDir);
+        $res = unzip_file("$cacheDir/$jobId.zip", $cacheDir);
+        if (is_wp_error($res)) error_log('Purifycss failed to unzip job package');
     }
 
     private function storeData($responseBody, $single) {

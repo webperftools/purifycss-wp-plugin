@@ -25,7 +25,7 @@ jQuery(document).ready(function($){
 		$('#live_button').off('click').on('click', livebutton_click );
 		$('#test_button').off('click').on('click', testbutton_click );
 		$('#activate_button').off('click').on('click', activatebutton_click );
-		$('#css_button').off('click').on('click', cssbutton_click );
+		$('#css_button').off('click').on('click', cssbutton_click ); // TODOPBA remove
 		$('#startJob').off('click').on('click', startJob_click );
 		$('#save_button').off('click').on('click', savebutton_click );
 		
@@ -109,6 +109,7 @@ jQuery(document).ready(function($){
 	let pollingInterval;
 	function startPollingJobStatus(jobId) {
 		$("button#abort").show().on('click', finishPolling);
+		$("button#startJob").hide();
 
 		pollingInterval = setInterval(() => {
 			getJobStatus(jobId, handleJobStatusResponse);
@@ -118,6 +119,7 @@ jQuery(document).ready(function($){
 	function finishPolling(ev){
 		clearInterval(pollingInterval);
 		$("button#abort").hide();
+		$("button#startJob").show();
 	}
 
 	function getGeneratedData(jobId) {
@@ -223,7 +225,7 @@ jQuery(document).ready(function($){
 	 * GetCSS button click to send request to get CSS
 	 * @param {event} ev 
 	 */
-	function cssbutton_click(ev){
+	function cssbutton_click(ev){ //TODOPBA remove
 		let customhtml = isCodeMirror() ? customhtml_text.codemirror.doc.getValue() : $('#customhtml_text').val();
 		let excludeUrls = $('#purifycss_exclude_urls_text').val();
 

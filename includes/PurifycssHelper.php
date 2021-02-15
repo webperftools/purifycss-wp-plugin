@@ -40,6 +40,8 @@ class PurifycssHelper {
     }
 
     public static function isExcluded() {
+        if (self::is_customizer()) return true;
+
         global $wp;
         $url = home_url($wp->request);
 
@@ -50,7 +52,7 @@ class PurifycssHelper {
         return false;
     }
 
-    private static function is_customizer() {
+    public static function is_customizer() {
         global $wp_customize;
         return isset( $wp_customize );
     }

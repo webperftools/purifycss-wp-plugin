@@ -72,7 +72,6 @@
         <p>
             <button class="button button-primary mr-3" style="display:none" id="abort"><?=__('Abort job','purifycss')?></button>
             <button class="button button-primary mr-3 " id="startJob"><?=__('Start job','purifycss')?></button>
-            <button class="button button-primary mr-3 " id="css_button"><?=__('Get clean CSS code','purifycss')?></button>
             <?php
             if (function_exists('w3tc_config')) {
                 $w3tc_config = w3tc_config();
