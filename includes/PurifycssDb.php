@@ -4,24 +4,12 @@ class PurifycssDb {
 
     public static $table_name = 'purifycss';
 
-    public static function create_table(){
+    public static function pages_table_exists(){
         global $wpdb;
-        $table_name = $wpdb->prefix ."purifycss";
-        $charset_collate = $wpdb->get_charset_collate();
+        $table_name = $wpdb->prefix ."purifycss_pages";
+        $res = $wpdb->query("SHOW TABLES LIKE '$table_name';");
 
-        $sql = "CREATE TABLE $table_name (
-				`id` int(0) UNSIGNED AUTO_INCREMENT,
-				`orig_css` varchar(512) NULL,
-				`css` varchar(512) NULL,
-				`before` varchar(20) NULL,
-				`after` varchar(20) NULL,
-				`used` varchar(20) NULL,
-				`unused` varchar(20) NULL,
-				PRIMARY KEY (`id`)
-				) $charset_collate;";
-
-        require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
-        dbDelta( $sql );
+        return $res != 0 ;
     }
 
     public static function create_pages_table(){
@@ -29,6 +17,7 @@ class PurifycssDb {
         $table_name = $wpdb->prefix ."purifycss_pages";
         $charset_collate = $wpdb->get_charset_collate();
 
+        error_log("create table");
         $sql = "CREATE TABLE $table_name (
 				`id` int(0) UNSIGNED AUTO_INCREMENT,
 				`url` varchar(512) NULL,
@@ -80,7 +69,6 @@ class PurifycssDb {
 
     public static function insert_pages($values) {
         if ( count($values) == 0 ) { return; }
-
         global $wpdb;
         $table_name = $wpdb->prefix ."purifycss_pages";
 
@@ -98,6 +86,10 @@ class PurifycssDb {
             return $acc;
         } );
 
+        if (!self::pages_table_exists()) {
+            self::create_pages_table();
+        }
+
         $wpdb->query("INSERT INTO $table_name (`url`, `css`, `before`, `after`, `used`, `unused`, `criticalcss`) VALUES ".join(',',$values).";");
     }
 
@@ -107,26 +99,27 @@ class PurifycssDb {
 
         $url_trimmed = untrailingslashit($url); // workaround //  TODO: normalize urls before insert
 
-        $res = $wpdb->query("DELETE FROM $table_name WHERE `url` = '$url' OR `url` = '$url_trimmed'");
+        if (self::pages_table_exists()) {
+            $res = $wpdb->query("DELETE FROM $table_name WHERE `url` = '$url' OR `url` = '$url_trimmed'");
+        }
     }
 
     public static function get_all() {
         global $wpdb;
         $table_name = $wpdb->prefix ."purifycss";
+
+        if (!self::pages_table_exists()) {
+            return false;
+        }
+
         return $wpdb->get_results( "SELECT `orig_css`, `css`, `before`, `after`, `used`, `unused` from $table_name;" );
     }
 
     public static function get_all_pages() {
+        if (!self::pages_table_exists()) { return []; }
         global $wpdb;
         $table_name = $wpdb->prefix ."purifycss_pages";
         return $wpdb->get_results( "SELECT `url`, `css`, `before`, `after`, `used`, `unused`, `criticalcss` from $table_name;" );
-    }
-
-    public static function get_by_src($src) {
-        global $wpdb;
-        $table_name = $wpdb->prefix ."purifycss";
-        $src = esc_sql($src);
-        return $wpdb->get_results( "SELECT `css` from $table_name WHERE  `orig_css` LIKE '%$src%' ;" );
     }
 
     public static function insert_data($data, $single) {
@@ -134,7 +127,10 @@ class PurifycssDb {
         if (!$single) {
             self::drop_pages_table();
             self::create_pages_table();
+        } else if (!self::pages_table_exists()) {
+            self::create_pages_table();
         }
+
         foreach ($data['urls'] as $urlData) {
             if ($urlData['crawl']['status'] == 'failed') continue;
 

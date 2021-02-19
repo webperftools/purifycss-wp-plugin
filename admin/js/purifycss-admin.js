@@ -24,6 +24,7 @@ jQuery(document).ready(function($){
 		 */
 		$('#live_button').off('click').on('click', livebutton_click );
 		$('#test_button').off('click').on('click', testbutton_click );
+		$('#off_button').off('click').on('click', offbutton_click );
 		$('#activate_button').off('click').on('click', activatebutton_click );
 		$('#css_button').off('click').on('click', cssbutton_click ); // TODOPBA remove
 		$('#startJob').off('click').on('click', startJob_click );
@@ -74,37 +75,79 @@ jQuery(document).ready(function($){
 
 
 	function startJob_click(ev){
+		disableButtons();
+		hideNotices();
 		let customhtml = isCodeMirror() ? customhtml_text.codemirror.doc.getValue() : $('#customhtml_text').val();
 		let excludeUrls = $('#purifycss_exclude_urls_text').val();
 
 		const data = { action:'purifycss_startjob', customhtml, excludeUrls };
 		$.ajax({url: ajaxurl, method: "POST", data})
 			.done(handleStartjobResponse)
-			.fail(console.error)
+			.fail(handleErrorResponse)
 			.always(reEnableButtons);
 	}
 
 
-
+	function hideNotices() {
+		$('.notice').remove();
+	}
+	function disableButtons() {
+		$('.purifycss-body .button').addClass('disabled');
+	}
 	function reEnableButtons() {
-			$('.purifycss-body .button').removeClass('disabled');
+		$('.purifycss-body .button').removeClass('disabled');
 	}
 
-	function handleStartjobResponse(data) {
-		if (!data) return handleError('failed. no data received.');
-		if (!data.response) return handleError(data);
-		if (data.response.code >= 400) return handleError(data);
+	function handleErrorResponse(data) {
+		console.error("error", data);
+		try {
+			let body = JSON.parse(data.body);
+			if (body.error) {
+				displayErrorNotice(body.error);
+			}
+		} catch(e) {
+			displayErrorNotice('Failed to parse API response. Please contact support@webperftools.com if this persists.');
+		}
+	}
 
-		console.log('purifycss_startjob callback:', data);
+
+	function handleActivateResponse(data) {
+		if (!data) return displayErrorNotice('Failed. No data received. Please try again later.');
+		if (!data.response) return displayErrorNotice('Failed. API response was empty. Please try again later.');
+		if (data.response.code >= 500) return displayErrorNotice('Failed due to API server error. Please try again later.');
+		if (data.response.code >= 400) return handleErrorResponse(data);
 
 		let body = null;
 		try {
 			body = JSON.parse(data.body);
-		} catch (e) { return handleError('An error ocurred. Unable to parse response.'); }
 
-		console.log("got jobId:",body.jobId);
-		startPollingJobStatus(body.jobId);
+			if (body.success) {
+				displaySuccessNotice(body.message);
+			} else {
+				displayErrorNotice(body.message);
+			}
+		} catch (e) {
+			return handleErrorResponse('An error ocurred. Unable to parse response.');
+		}
+
+
 	}
+
+	function handleStartjobResponse(data) {
+		if (!data) return displayErrorNotice('Failed. No data received. Please try again later.');
+		if (!data.response) return displayErrorNotice('Failed. API response was empty. Please try again later.');
+		if (data.response.code >= 500) return displayErrorNotice('Failed due to API server error. Please try again later.');
+		if (data.response.code >= 400) return handleErrorResponse(data);
+
+		let body = null;
+		try {
+			body = JSON.parse(data.body);
+			startPollingJobStatus(body.jobId);
+		} catch (e) {
+			return handleErrorResponse('An error ocurred. Unable to parse response.');
+		}
+	}
+
 
 	let pollingInterval;
 	function startPollingJobStatus(jobId) {
@@ -146,7 +189,7 @@ jQuery(document).ready(function($){
 
 
 	function handleJobStatusResponse(data) {
-		if (!data) return handleError('failed. no data received.');
+		if (!data) return displayErrorNotice('Failed. No data received. Please try again later.');
 		$('.crawl-summary').html(generateStatusHtml(data));
 		$(document).on('click','[data-toggle-details]', (ev)=>{ //ugly!
 			const $sub = $("[data-details-for-url='"+$(ev.target).text()+"']");
@@ -160,8 +203,6 @@ jQuery(document).ready(function($){
 	}
 
 	function generateStatusHtml(data) {
-		console.log("generateStatusHtml", data);
-
 		let html = `<p>Status: ${data.status}</p>`;
 		if (!data.urls) return html;
 
@@ -216,10 +257,15 @@ jQuery(document).ready(function($){
 		return '';
 	}
 
-	function handleError(...data) {
-		console.error(...data);
+	function displaySuccessNotice(message) {
+		$('.notice').remove();
+		$('#wpbody-content').prepend('<div id="notice" class="notice notice-success is-dismissible"><p>'+message+'</p></div>');
 	}
 
+	function displayErrorNotice(message) {
+		$('.notice').remove();
+		$('#wpbody-content').prepend('<div id="notice" class="notice notice-error is-dismissible"><p>'+message+'</p></div>');
+	}
 
 	/**
 	 * GetCSS button click to send request to get CSS
@@ -230,7 +276,6 @@ jQuery(document).ready(function($){
 		let excludeUrls = $('#purifycss_exclude_urls_text').val();
 
 		sendAjax( { action:'purifycss_getcss', customhtml, excludeUrls }, (data)=>{
-			console.log(data);
 			$('.result-block').html("Result: "+data.resmsg).show();
 			purified_css.codemirror.doc.setValue(data.styles);
 
@@ -320,52 +365,50 @@ jQuery(document).ready(function($){
 	 * @param {event} ev 
 	 */
 	function activatebutton_click(ev){
-		let keyval='';
-		// get api value
-		keyval = $('#api-key').val();
 
-		sendAjax( { action:'purifycss_activate', key:keyval }, (data)=>{
-			if ( data.status=="OK" ){
-				$('.activated-text').removeClass('d-none');
-			}
-			console.log(data);
-		} );
+		disableButtons();
+		const data = { action:'purifycss_activate', key:$('#api-key').val() };
+		$.ajax({url: ajaxurl, method: "POST", data})
+			.done(handleActivateResponse)
+			.fail(handleErrorResponse)
+			.always(reEnableButtons);
 	}
 
-	/**
-	 * Live button click to enable live mode
-	 * @param {event} ev 
-	 */
 	function livebutton_click(ev){
+		if (purifyStatus === 'live') return;
 		sendAjax( { action:'purifycss_livemode' }, (data)=>{
-			// get livemode status
-			if ( typeof(data.livemode)!=='undefined'  ){
-				if ( data.livemode==1 ){
-					$('#live_button').addClass('active');
-				}else{
-					$('#live_button').removeClass('active');
-				}
-			}
+			purifyStatus = 'live';
+			$('#live_button').addClass('button-primary');
+			$('#test_button').removeClass('button-primary');
+			$('#off_button').removeClass('button-primary');
+			$('.purifycss_status').hide();
+			$('.purifycss_status.live').show();
 		} );
 	}
 
-	/**
-	 * Test button click to enable test mode
-	 * @param {event} ev 
-	 */
 	function testbutton_click(ev){
+		if (purifyStatus === 'test') return;
 		sendAjax( { action:'purifycss_testmode' }, (data)=>{
-			// get testmode status
-			if ( typeof(data.testmode)!=='undefined'  ){
-				if ( data.testmode==1 ){
-					$('#test_button').addClass('active');
-				}else{
-					$('#test_button').removeClass('active');
-				}
-			}
+			purifyStatus = 'test';
+			$('#live_button').removeClass('button-primary');
+			$('#test_button').addClass('button-primary');
+			$('#off_button').removeClass('button-primary');
+			$('.purifycss_status').hide();
+			$('.purifycss_status.test').show();
 		} );
 	}
 
+	function offbutton_click(ev){
+		if (purifyStatus === 'off') return;
+		sendAjax( { action:'purifycss_offmode' }, (data)=>{
+			purifyStatus = 'off';
+			$('#live_button').removeClass('button-primary');
+			$('#test_button').removeClass('button-primary');
+			$('#off_button').addClass('button-primary');
+			$('.purifycss_status').hide();
+			$('.purifycss_status.off').show();
+		} );
+	}
 	/**
 	 * Send ajax request via jQuery
 	 * @param {*} url 
@@ -381,27 +424,18 @@ jQuery(document).ready(function($){
 			method: "POST",
 			data: param,
 		}).done( (data)=>{
-			console.log("done", data);
 			if ( data.status == 'OK' ){
 				callback(data);
-				// show notice
 				if ( typeof(data.msg)!=='undefined' ){
-					$('.notice').remove();
-					$('#wpbody-content').prepend('<div id="notice" class="notice notice-success is-dismissible"><p>'+data.msg+'</p></div>');
+					displaySuccessNotice(data.msg);
 				}
 			}else{
-				// show error
 				if ( typeof(data.msg)!=='undefined' ){
-					$('.notice').remove();
-					$('#wpbody-content').prepend('<div id="notice" class="notice notice-error is-dismissible"><p>'+data.msg+'</p></div>');
+					displayErrorNotice(data.msg)
 				}
 			}
 		} )
-		.fail( ()=>{
-			console.log(errorMsg);
-			$('.notice').remove();
-			$('#wpbody-content').prepend('<div id="notice" class="notice notice-error is-dismissible"><p>'+errorMsg+'</p></div>');
-		} )
+		.fail( ()=>{ displayErrorNotice(errorMsg);} )
 		.always( ()=>{
 			// enable all buttons when ajax request ending
 			$('.purifycss-body .button').removeClass('disabled');

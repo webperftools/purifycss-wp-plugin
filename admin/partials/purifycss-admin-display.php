@@ -29,38 +29,31 @@
    ?>
 
     <?php
-    $status = "";
-
-    if (get_option('purifycss_livemode')=='1') { $status = "active for all users";}
-    else if (get_option('purifycss_testmode')=='1') { $status = "active only for admin users";}
-    else { $status = "not active"; }
+    $status = 'off';
+    if (get_option('purifycss_livemode')=='1') { $status = 'live'; }
+    else if (get_option('purifycss_testmode')=='1') { $status = 'test';}
+    else {$status = 'off';}
     ?>
-   <p>Purifycss is currently <span class="purifycss_status"><?=$status;?></span>.</p> <?php
-    /* TODO update purifycss status after ajax update */ ?>
 
+   <script>var purifyStatus = '<?=$status?>';</script>
+   <p>
+         <strong style="font-size: 16px;">Status: </strong>
+        <button class="button inspan <?=$status=='off' ? 'button-primary':''?> " id="off_button" title="Click to turn off PurifyCSS">Off</button>
+        <button class="button inspan <?=$status=='test' ?'button-primary':''?>" id="test_button" title="Click to enable test mode. Only you and other logged in admin users will see the changes.">Test</button>
+        <button class="button inspan <?=$status=='live' ?'button-primary':''?>" id="live_button" title="Click to enable live mode. All visitors will see the changes created by PurifyCSS! Make sure to test before enabling this!">Live</button>
 
-    <p>
-        <button class="button inspan button-primary <?=get_option('purifycss_livemode')=='1'?'active':''?>" id="live_button">
-            <span class="enable"><?=__('Enable Live Mode','purifycss')?></span>
-            <span class="disable"><?=__('Disable Live Mode','purifycss')?></span>
-        </button>
-    </p>
-
-    <p>
-        <button class="button inspan <?=get_option('purifycss_testmode')=='1'?'active':''?>" id="test_button">
-            <span class="enable"><?=__('Enable Test Mode','purifycss')?></span>
-            <span class="disable"><?=__('Disable Test Mode','purifycss')?></span>
-        </button>
-    </p>
+      Purifycss is currently
+      <span class="purifycss_status off" <?=($status!='off')?'style="display:none"':''?>> not active</span>
+      <span class="purifycss_status test" <?=($status!='test')?'style="display:none"':''?>> active only for admin users</span>
+      <span class="purifycss_status live" <?=($status!='live')?'style="display:none"':''?>> active for all users.</span>.
+   </p>
 
     <div class="manage-menus">
 
-        <p><?=__('PurifyCSS API license key:','purifycss')?> <a href="https://www.webperftools.com/purifycss/license-key"><?=__('Get licence key','purifycss')?></a> </p>
-
-        <p> 
+        <p><?=__('PurifyCSS API license key:','purifycss')?> <a href="https://www.webperftools.com/purifycss/purchase-license/" target="_blank"><?=__('Get licence key','purifycss')?></a> </p>
+        <p>
             <input name="api-key" type="text" id="api-key" value="<?=get_option('purifycss_api_key')?>" autocomplete="off" class="regular-text"> 
             <button class="button button-primary " id="activate_button"><?=__('Activate','purifycss')?></button>
-            <span class="activated-text green-text <?=get_option('purifycss_api_key_activated')==true?'':'d-none'?>"><span class="dashicons dashicons-yes"></span> Activated!</span>
         </p>
         
         <p class="expand-click"> <span class="dashicons dashicons-arrow-right"></span> <span class="clickable"><?=__('PurifyCSS options','purifycss')?> </span> </p>
@@ -72,7 +65,12 @@
         <p>
             <button class="button button-primary mr-3" style="display:none" id="abort"><?=__('Abort job','purifycss')?></button>
             <button class="button button-primary mr-3 " id="startJob"><?=__('Start job','purifycss')?></button>
+
+
             <?php
+            if ($status == 'live') {
+                echo "  Note: This will turn off PurifyCSS to enable the background processes to fetch the original CSS sources.";
+            }
             if (function_exists('w3tc_config')) {
                 $w3tc_config = w3tc_config();
                 if ($w3tc_config->get_boolean('pgcache.enabled', false)) {

@@ -7,7 +7,7 @@ jQuery(document).ready(function($){
 	function adminbar_runsingle_click(ev) {
 		console.log("Start purifycss for url: ", window.location.href);
 		if ($('#wp-admin-bar-purifycss > a.ab-item .spinner').length === 0){
-			$('#wp-admin-bar-purifycss > a.ab-item').append("<span class='spinner'>Loading...</span>");
+			$('#wp-admin-bar-purifycss > a.ab-item').append("<span class='spinner'> Loading...</span>");
 		}
 		$.ajax({
 			url: purifyData.ajaxurl,
@@ -18,6 +18,11 @@ jQuery(document).ready(function($){
 			}
 		}).done( (data) => {
 
+			if (!data) return displayErrorNotice('Failed. No data received. Please try again later.');
+			if (!data.response) return displayErrorNotice('Failed. API response was empty. Please try again later.');
+			if (data.response.code >= 500) return displayErrorNotice('Failed due to API server error. Please try again later.');
+			if (data.response.code >= 400) return handleErrorResponse(data);
+
 			let body = null;
 			try {
 				body = JSON.parse(data.body);
@@ -25,11 +30,11 @@ jQuery(document).ready(function($){
 
 			console.log("got jobId:",body.jobId);
 			startPolling(body.jobId);
-			//
-			//window.location.reload()
 		}).fail( (err)=>{
 			console.log("Failed purify: ", err);
-		} )
+		} ).always( ()=> {
+
+		} );
 		return false;
 	}
 
@@ -40,9 +45,24 @@ jQuery(document).ready(function($){
 		},1000);
 	}
 
-	function handleSingleStatusResponse(data) {
-		console.log("got job status ", data);
+	function displayErrorNotice(msg) {
+		alert(msg);
+		$('#wp-admin-bar-purifycss span.spinner').remove();
+	}
 
+	function handleErrorResponse(data) {
+		console.error("error", data);
+		try {
+			let body = JSON.parse(data.body);
+			if (body.error) {
+				displayErrorNotice(body.error);
+			}
+		} catch(e) {
+			displayErrorNotice('Failed to parse API response. Please contact support@webperftools.com if this persists.');
+		}
+	}
+
+	function handleSingleStatusResponse(data) {
 		if (data.status === 'completed') {
 			finishPolling();
 			getGeneratedData(data.jobId);
@@ -55,6 +75,8 @@ jQuery(document).ready(function($){
 			url: purifyData.ajaxurl,
 			method: "GET",
 			data,
+		}).done( (data) => {
+			$('#wp-admin-bar-purifycss span.spinner').remove();
 		})
 
 	}

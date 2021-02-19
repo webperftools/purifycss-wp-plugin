@@ -8,7 +8,6 @@ class Purifycss_Public {
     public $criticalcss = null;
 
 	public function __construct( ) {
-        $this->files = PurifycssHelper::get_css_files_mapping();
         $this->files_perpage = PurifycssHelper::get_pages_files_mapping();
 	}
 

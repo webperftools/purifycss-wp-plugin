@@ -81,56 +81,6 @@ class PurifycssHelper {
         return false;
     }
 
-    static public function save_css_to_db($css){
-        self::cleanup_existing_files();
-
-        $todb   = [];
-
-        foreach ($css as $_obj){
-            if ( isset($_obj['inline']) && $_obj['inline']==True ){
-                $css_identifier = self::get_css_id_by_content($_obj['original']['content']);
-            }else{
-                $css_identifier = $_obj['url'];
-            }
-
-            $filename = md5($css_identifier.uniqid()).'.css';
-
-            $_obj = apply_filters('purifycss_before_filesave', $_obj);
-
-            $cssContent = $_obj['purified']['content'];
-
-            if (!is_dir(self::get_cache_dir_path())) {
-                mkdir(self::get_cache_dir_path());
-            }
-
-            file_put_contents( self::get_cache_dir_path() . $filename , $cssContent);
-
-            $todb[] = [
-                'orig_css' => $css_identifier,
-                'css'      => $filename,
-                'before'    => $_obj['stats']['before'],
-                'after'     => $_obj['stats']['after'],
-                'used'      => $_obj['stats']['percentageUsed'],
-                'unused'     => $_obj['stats']['percentageUnused'],
-            ];
-        }
-
-        PurifycssDb::drop_table();
-        PurifycssDb::create_table();
-        PurifycssDb::insert($todb);
-        return;
-    }
-
-    static public function save_pages_to_db($html){
-
-        PurifycssDb::drop_pages_table();
-        PurifycssDb::create_pages_table();
-
-        self::add_pages($html);
-
-        return;
-    }
-
     static public function add_pages($html){
         $todb   = [];
         foreach ($html as $_obj){
@@ -167,16 +117,6 @@ class PurifycssHelper {
 
     public static function is_debug(){
         return isset($_GET['purifydebug']) && $_GET['purifydebug']=1;
-    }
-
-    public static function get_css_files_mapping() {
-        $files = array();
-        foreach(PurifycssDb::get_all() as $file) {
-            $file->css_filename = $file->css;
-            $file->css = PurifycssHelper::get_cache_dir_url() . $file->css;
-            $files[] = $file;
-        }
-        return $files;
     }
 
     public static function get_pages_files_mapping() {
