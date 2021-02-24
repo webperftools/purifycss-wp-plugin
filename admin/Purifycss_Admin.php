@@ -236,9 +236,7 @@ class Purifycss_Admin {
     public function enqueue_adminbar_scripts() {
 	    $ajaxurl = json_encode(admin_url( 'admin-ajax.php' ));
 	    $apiHost = json_encode($this->get_api_host());
-
-
-        echo "<script>var purifyData = {ajaxurl:$ajaxurl, apiHost: $apiHost};</script><script src='".plugin_dir_url( __FILE__ ) . 'js/purifycss-adminbar.js'."'></script>";
+        echo "<script>var purifyData = {ajaxurl:$ajaxurl, apiHost: $apiHost};</script><script async='async' src='".plugin_dir_url( __FILE__ ) . 'js/purifycss-adminbar.js'."'></script>";
     }
 
 	public function get_api_host() {
