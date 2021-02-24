@@ -114,6 +114,19 @@ class Purifycss_Admin {
         wp_send_json($responseData, $response->get_error_code());
     }
 
+    public function actionSetRunningJob(){
+        $jobId = $_GET['jobId'];
+        if ($jobId == "") {
+            delete_option('purifycss_runningjob');
+        } else {
+            update_option('purifycss_runningjob', $jobId);
+        }
+    }
+
+    public function actionGetRunningJob(){
+        wp_send_json(get_option('purifycss_runningjob'));
+    }
+
     public function actionJobStatus(){
         $jobId = $_GET['jobId'];
         $single = isset($_GET['single']) ? $_GET['single'] : false;

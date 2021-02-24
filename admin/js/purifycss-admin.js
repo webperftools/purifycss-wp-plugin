@@ -35,7 +35,7 @@ jQuery(document).ready(function($){
 		$('.expand-click2').off('click').on('click', toogletext_click2 );
 		$('.expand-click3').off('click').on('click', toogletext_click3);
 
-
+		getRunningJob();
 	}
 
 
@@ -72,8 +72,6 @@ jQuery(document).ready(function($){
 		return typeof(customhtml_text)!=='undefined' && typeof(customhtml_text.codemirror)!=='undefined';
 	}
 
-
-
 	function startJob_click(ev){
 		disableButtons();
 		hideNotices();
@@ -86,7 +84,6 @@ jQuery(document).ready(function($){
 			.fail(handleErrorResponse)
 			.always(reEnableButtons);
 	}
-
 
 	function hideNotices() {
 		$('.notice').remove();
@@ -149,18 +146,33 @@ jQuery(document).ready(function($){
 	}
 
 
-	let pollingInterval;
 	function startPollingJobStatus(jobId) {
 		$("button#abort").show().on('click', finishPolling);
 		$("button#startJob").hide();
 
-		pollingInterval = setInterval(() => {
-			getJobStatus(jobId, handleJobStatusResponse);
-		}, 1000);
+		setRunningJob(jobId);
+		getJobStatus(jobId, handleJobStatusResponse);
+	}
+
+	function setRunningJob(jobId) {
+		$.ajax({
+			url: ajaxurl,
+			method: "GET",
+			data: { action: 'purifycss_setrunningjob', jobId: jobId }
+		});
+	}
+
+	function getRunningJob(jobId) {
+		$.ajax({
+			url: ajaxurl,
+			method: "GET",
+			data: { action: 'purifycss_getrunningjob' }
+		}).done((jobId)=> {
+			if (jobId) getJobStatus(jobId, handleJobStatusResponse);
+		});
 	}
 
 	function finishPolling(ev){
-		clearInterval(pollingInterval);
 		$("button#abort").hide();
 		$("button#startJob").show();
 	}
@@ -178,10 +190,9 @@ jQuery(document).ready(function($){
 
 	let currReq = null;
 	window.getJobStatus = function(jobId, cb) {
-		currReq = $.ajax({
+		$.ajax({
 			url: purifyData.apiHost + '/status/'+jobId,
-			method: "GET",
-			beforeSend : ()=>{ if (currReq != null) currReq.abort()}
+			method: "GET"
 		})
 		.done(cb)
 		.fail(console.error)
@@ -198,12 +209,17 @@ jQuery(document).ready(function($){
 		});
 		if (data.status === 'completed') {
 			finishPolling();
+			setRunningJob(data.jobId, '');
 			getGeneratedData(data.jobId);
+		} else {
+			setTimeout(() => {
+				getJobStatus(data.jobId, handleJobStatusResponse);
+			},1000);
 		}
 	}
 
 	function generateStatusHtml(data) {
-		let html = `<p>Status: ${data.status}</p>`;
+		let html = `<p>Status: ${data.status ? data.status : 'starting...'}</p>`;
 		if (!data.urls) return html;
 
 		html += `
