@@ -75,11 +75,11 @@ class Purifycss_Public {
             if (untrailingslashit( $pcfile->url) === $url) {
                 $this->purifycss_url = $pcfile->css;
                 $this->criticalcss = $pcfile->criticalcss;
-                PurifycssDebugger::log("  returing true");
+                PurifycssDebugger::log("  purifycss_should_run returns true");
                 return true;
             }
         }
-        PurifycssDebugger::log("  returing false - nothing found for current url: ".$url);
+        PurifycssDebugger::log("  purifycss_should_run returns false - nothing found for current url: ".$url);
         return false;
     }
 
@@ -95,6 +95,10 @@ class Purifycss_Public {
 
             if ( $style=='admin-bar' ) continue;
             if (strpos($style, 'purified') !== false) continue;
+            if (!array_key_exists($style, $wp_styles->registered)) {
+                PurifycssDebugger::log("  failed to dequeue unregistered style: ".$style);
+            }
+
             if ($this->isWhitelistedStyle($wp_styles->registered[$style]->src)) {
                 PurifycssDebugger::log("  skip (whitelist): ".$wp_styles->registered[$style]->src);
                 continue;
