@@ -176,7 +176,6 @@ class Purifycss_Admin {
 		$html           = base64_encode($_POST['customhtml']);
 		$excludeUrls    = $_POST['excludeUrls'];
         $skipCssFiles    = $_POST['skipCssFiles'];
-		$css            = $_POST['editedcss'];
 		$msg 	        = '';
 		// result msg for display in div block
 		$resmsg = '';

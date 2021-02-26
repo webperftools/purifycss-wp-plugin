@@ -57,8 +57,7 @@ jQuery(document).ready(function($){
 			action:'purifycss_savecss',
 			customhtml:customhtml,
 			excludeUrls:excludeUrls,
-			skipCssFiles:skipCssFiles,
-			editedcss:purified_css.codemirror.doc.getValue()
+			skipCssFiles:skipCssFiles
 		}, (data)=>{
 
 			window.scroll({
