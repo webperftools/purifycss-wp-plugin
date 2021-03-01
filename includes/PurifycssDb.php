@@ -123,6 +123,8 @@ class PurifycssDb {
     }
 
     public static function insert_data($data, $single) {
+        PurifycssDebugger::log("inserting data to db. Single page:".$single);
+
         $values = [];
         if (!$single) {
             self::drop_pages_table();
@@ -134,6 +136,7 @@ class PurifycssDb {
         foreach ($data['urls'] as $urlData) {
             if ($urlData['crawl']['status'] == 'failed') continue;
 
+            PurifycssDebugger::log("  url:".$urlData['url']);
 
             $before = $urlData['fullCss']['stats']['bytes'];
             $after = $urlData['purifyCss']['stats']['bytes'];
@@ -174,7 +177,12 @@ class PurifycssDb {
             }
         }
         $query = "INSERT INTO $table_name (`url`, `css`, `before`, `after`, `used`, `unused`, `criticalcss`) VALUES ".join(',',$values).";";
-        $wpdb->query($query);
+        $res = $wpdb->query($query);
+
+        PurifycssDebugger::log("  query result:".print_r($res,1));
+        if (!$res) {
+            PurifycssDebugger::log($wpdb->last_error);
+        }
 
     }
 

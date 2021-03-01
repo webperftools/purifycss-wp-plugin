@@ -38,7 +38,7 @@ class Purifycss_Admin {
             if (PurifycssHelper::isExcluded()) {
                 $wp_admin_bar->add_menu(array('parent' => $menu_id, 'title' => "This URL is excluded", 'id' => 'purifycss-excluded'));
             } else {
-                $data = $this->getPurifyData($url);
+                $data = $this->getPurifyData($wp->request);
                 if (is_object($data)) {
                     if ($data->used != "") {
                         $wp_admin_bar->add_menu(array('parent' => $menu_id, 'title' => "PurifyCSS: ".$data->used, 'id' => 'purifycss-used'));
@@ -164,7 +164,7 @@ class Purifycss_Admin {
         file_put_contents("$cacheDir/$jobId.zip", file_get_contents($this->get_api_host()."/retrieve/$jobId/$jobId.zip"));
 
         $res = unzip_file("$cacheDir/$jobId.zip", $cacheDir);
-        if (is_wp_error($res)) error_log('Purifycss failed to unzip job package');
+        if (is_wp_error($res)) PurifycssDebugger::log('Purifycss failed to unzip job package');
     }
 
     private function storeData($responseBody, $single) {

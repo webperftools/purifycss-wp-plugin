@@ -3,14 +3,23 @@
 
 class PurifycssDebugger {
     public static $logs = array();
+    public static $cleared = false;
 
     public function debug_enqueued_styles() {
         global $wp_styles;
-
     }
 
     static public function log($msg) {
         self::$logs[] = $msg;
+
+        $logfile = WP_CONTENT_DIR.PurifycssHelper::$cache_dir.'debug_log.txt';
+
+        if (isset($_GET['purify_clearlogs']) && !self::$cleared) {
+            file_put_contents($logfile,'');
+            self::$cleared = true;
+        }
+
+        file_put_contents($logfile,$msg."\n", FILE_APPEND);
     }
 
     static public function isDebugEnabled() {

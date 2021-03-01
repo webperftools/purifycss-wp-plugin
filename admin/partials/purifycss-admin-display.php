@@ -48,6 +48,11 @@
       <span class="purifycss_status live" <?=($status!='live')?'style="display:none"':''?>> active for all users.</span>.
    </p>
 
+    <?php
+    $cacheDir = PurifycssHelper::check_cache_dir();
+    if (!$cacheDir['is_writable']) { echo "<p>Cache directory is not writable. Couldn't create folder: ".$cacheDir['dir']."</p>";}
+    ?>
+
     <div class="manage-menus">
 
         <p><?=__('PurifyCSS API license key:','purifycss')?> <a href="https://www.webperftools.com/purifycss/purchase-license/" target="_blank"><?=__('Get licence key','purifycss')?></a> </p>

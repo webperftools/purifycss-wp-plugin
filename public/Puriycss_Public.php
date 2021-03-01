@@ -7,11 +7,11 @@ class Purifycss_Public {
     public $purifycss_url = null;
     public $criticalcss = null;
 
-	public function __construct( ) {
+    public function __construct( ) {
         $this->files_perpage = PurifycssHelper::get_pages_files_mapping();
-	}
+    }
 
-	public function define_hooks() {
+    public function define_hooks() {
         if ( PurifycssHelper::is_enabled() ){
 
 
@@ -68,7 +68,7 @@ class Purifycss_Public {
         if (PurifycssHelper::isExcluded()) return false;
         if (!apply_filters('purifycss_should_run', true)) return false;
 
-	    global $wp;
+        global $wp;
         $url = untrailingslashit(home_url( $wp->request ));
 
         foreach ($this->files_perpage as $pcfile) {
@@ -80,6 +80,10 @@ class Purifycss_Public {
             }
         }
         PurifycssDebugger::log("  purifycss_should_run returns false - nothing found for current url: ".$url);
+        PurifycssDebugger::log("  We have only data for the urls: ");
+        foreach($this->files_perpage as $item) {
+            PurifycssDebugger::log("    ".$item->url);
+        }
         return false;
     }
 
@@ -144,20 +148,20 @@ class Purifycss_Public {
     }
 
     private function isWhitelistedStyle($src) {
-	    $default_whitelist = ["admin-bar", "purified", "purifycss"];
-	    $skipCssFiles = get_option('purifycss_skip_css_files', "");
-	    $whitelist = array_merge($default_whitelist, explode("\n",$skipCssFiles) );
+        $default_whitelist = ["admin-bar", "purified", "purifycss"];
+        $skipCssFiles = get_option('purifycss_skip_css_files', "");
+        $whitelist = array_merge($default_whitelist, explode("\n",$skipCssFiles) );
 
-	    foreach ($whitelist as $regex) {
-	        if ($regex === "") continue;
-	        if (is_numeric(strpos($src, $regex))) { return true; } // exact match
-	        if (preg_match("/".$regex."/im", $src)) { return true; } // regex match
+        foreach ($whitelist as $regex) {
+            if ($regex === "") continue;
+            if (is_numeric(strpos($src, $regex))) { return true; } // exact match
+            if (preg_match("/".$regex."/im", $src)) { return true; } // regex match
         }
-	    return false;
+        return false;
     }
 
     public function remove_inline_styles($wpHTML) {
-	    PurifycssDebugger::log("remove_inline_styles");
+        PurifycssDebugger::log("remove_inline_styles");
 
         $skip = apply_filters('purifycss_skip_replace_inline_styles', false);
         if (!$skip) {

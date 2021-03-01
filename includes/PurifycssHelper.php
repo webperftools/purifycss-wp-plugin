@@ -148,4 +148,16 @@ class PurifycssHelper {
     public static function file_exists($filename) {
         return is_file(PurifycssHelper::get_cache_dir_path() . $filename);
     }
+
+    public static function check_cache_dir() {
+        if (!is_dir(self::get_cache_dir_path())) {
+            mkdir(self::get_cache_dir_path(), 0777, true);
+        }
+
+        return [
+            "dir" => self::get_cache_dir_path(),
+            "exists" => is_dir(self::get_cache_dir_path()),
+            "is_writable" => is_writable(self::get_cache_dir_path())
+        ];
+    }
 }
