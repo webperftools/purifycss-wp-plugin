@@ -5,10 +5,10 @@ class Purifycss_Autoptimize extends Purifycss_ThirdPartyExtension {
 
     public function run() {
         if (!PurifycssHelper::is_enabled()) return;
-        if (!$this->autoptimizePluginActive() | !$this->autoptimizedCssEnabled()) return;
+        if (!$this->autoptimizePluginActive() || !$this->autoptimizedCssEnabled()) return;
 
-        add_filter( 'purifycss_skip_replace_link_styles', function () {return true;});
-        add_filter( 'purifycss_skip_replace_inline_styles', function () {return true;});
+        // add_filter( 'purifycss_skip_replace_link_styles', function () {return true;});
+        // add_filter( 'purifycss_skip_replace_inline_styles', function () {return true;});
 
     }
 

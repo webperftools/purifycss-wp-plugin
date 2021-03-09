@@ -208,7 +208,7 @@ jQuery(document).ready(function($){
 		});
 		if (data.status === 'completed') {
 			finishPolling();
-			setRunningJob(data.jobId, '');
+			setRunningJob('');
 			getGeneratedData(data.jobId);
 		} else {
 			setTimeout(() => {

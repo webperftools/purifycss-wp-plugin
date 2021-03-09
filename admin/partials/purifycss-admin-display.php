@@ -84,7 +84,38 @@
             }
             ?>
         </p>
-       <div class="crawl-summary"></div>
+       <div class="crawl-summary">
+
+          <?php
+
+          echo get_option('purifycss_runningjob');
+
+         echo "<table>";
+          echo "<tr>";
+          echo "<td>URL</td>";
+          echo "<td>PurifyCSS</td>";
+          echo "<td>CriticalCSS</td>";
+          echo "</tr>";
+
+          foreach(PurifycssHelper::get_pages_files_mapping() as $item) {
+             if ( $item->criticalcss ) {
+                 $criticalFileSize = filesize(PurifycssHelper::get_cache_dir_path() . $item->criticalcss);
+                 if ($criticalFileSize) {
+                     $criticalFileSize = round($criticalFileSize / 1024 , 1).' kb';
+                 }
+             }
+              echo "<tr>";
+              echo "<td>".$item->url ."</td>";
+              echo "<td align='center'>".($item->css ? $item->used : '--') ."</td>";
+              echo "<td align='center' title='".$item->criticalcss."'>".($item->criticalcss ? $criticalFileSize : '--') ."</td>";
+              echo "</tr>";
+          }
+          echo "</table>";
+
+          ?>
+
+
+       </div>
     </div>
 
    <p class="expand-click2"> <span class="dashicons dashicons-arrow-right"></span> <span class="clickable"><?=__('Exclude Urls / Disables PurifyCSS on these URLs','purifycss')?> </span> </p>

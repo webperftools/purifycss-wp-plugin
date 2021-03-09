@@ -55,12 +55,19 @@ class Purifycss_Public {
     }
 
     public function end_html_buffer(){
+        PurifycssDebugger::log("end_html_buffer");
         global $wp_styles;
         $wpHTML = ob_get_clean();
 
+        PurifycssDebugger::log("purifycss_before_final_print");
+
         $wpHTML = apply_filters('purifycss_before_final_print', $wpHTML);
+        PurifycssDebugger::log("after purifycss_before_final_print");
         echo $wpHTML;
+
+        PurifycssDebugger::log("purifycss_after_final_print");
         do_action('purifycss_after_final_print');
+        PurifycssDebugger::log("after purifycss_after_final_print");
 
     }
 
@@ -101,6 +108,7 @@ class Purifycss_Public {
             if (strpos($style, 'purified') !== false) continue;
             if (!array_key_exists($style, $wp_styles->registered)) {
                 PurifycssDebugger::log("  failed to dequeue unregistered style: ".$style);
+                continue;
             }
 
             if ($this->isWhitelistedStyle($wp_styles->registered[$style]->src)) {
@@ -179,10 +187,13 @@ class Purifycss_Public {
         PurifycssDebugger::log("add_critical_css");
 
         $criticalCss = $this->criticalcss;
-        if (!$criticalCss) return $wpHTML;
+        if (!$criticalCss) {
+            $wpHTML = str_replace('</title>', '</title><!-- purifycssmarker -->'.$criticalCss, $wpHTML);
+            return $wpHTML;
+        }
 
         $criticalCss = file_get_contents(PurifycssHelper::get_cache_dir_path() . $criticalCss);
-        $criticalCss = "\n\t<style id=\"critical-css\" type=\"text/css\">".$criticalCss."</style><!-- end critical css -->";
+        $criticalCss = "\n\t<style id=\"critical-css\" type=\"text/css\">".$criticalCss."</style><!-- purifycssmarker -->";
         $wpHTML = str_replace('</title>', '</title>'.$criticalCss, $wpHTML);
         return $wpHTML;
     }
@@ -197,7 +208,7 @@ class Purifycss_Public {
         PurifycssDebugger::log("add_purifycss");
         PurifycssDebugger::log("  purifycss url: ".$this->purifycss_url);
         $appendCode = "<link id=\"purifycss\" rel=\"stylesheet\" href=\"$this->purifycss_url\" media=\"all\" />";
-        $wpHTML = str_replace('<!-- end critical css -->',"\n$appendCode",$wpHTML);
+        $wpHTML = str_replace('<!-- purifycssmarker -->',"\n$appendCode",$wpHTML);
         return $wpHTML;
     }
 
@@ -206,7 +217,7 @@ class Purifycss_Public {
         PurifycssDebugger::log("  purifycss url: ".$this->purifycss_url);
 
         $appendCode = "<link id=\"purifycss\" rel=\"preload\" as=\"style\" href=\"$this->purifycss_url\" media=\"all\" onload=\"this.rel='stylesheet'\" />";
-        $wpHTML = str_replace('<!-- end critical css -->',"\n\t$appendCode",$wpHTML);
+        $wpHTML = str_replace('<!-- purifycssmarker -->',"\n\t$appendCode",$wpHTML);
         return $wpHTML;
     }
     public function print_debug() {

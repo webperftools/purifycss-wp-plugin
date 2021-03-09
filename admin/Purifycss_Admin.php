@@ -117,8 +117,10 @@ class Purifycss_Admin {
     public function actionSetRunningJob(){
         $jobId = $_GET['jobId'];
         if ($jobId == "") {
+            PurifycssDebugger::log("removed runningjob ".$jobId);
             delete_option('purifycss_runningjob');
         } else {
+            PurifycssDebugger::log("insert runningjob ".$jobId);
             update_option('purifycss_runningjob', $jobId);
         }
     }
