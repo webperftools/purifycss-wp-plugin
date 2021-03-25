@@ -39,7 +39,6 @@ jQuery(document).ready(function($){
 
 		$(document).on('click','[data-toggle-details]', (ev)=>{ //ugly!
 			const $sub = $("[data-details-for-url='"+$(ev.target).attr('data-toggle-details')+"']");
-			console.log("clicked", ev.target,$(ev.target).attr('data-toggle-details'), $sub);
 			if ($sub.is(':visible')) $sub.hide();
 			else $sub.show();
 		});
@@ -290,7 +289,6 @@ jQuery(document).ready(function($){
 		html += '<span class="warning_icon"></span> Due to CSS syntax errors PurifyCSS couldn\'t parse the code correctly and might have missed some necessary code, as it often ignores the parts after such errors. To fix this, you should correct the syntax in the specified file and try again.';
 
 		for (let error of errors) {
-			console.log(error);
 			html += `<pre title="${error.source}">${error.errorType}: ${error.reason} in ${error.filename} at ${error.line}:${error.column}</pre>`;
 		}
 
