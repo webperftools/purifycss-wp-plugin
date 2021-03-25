@@ -36,6 +36,13 @@ jQuery(document).ready(function($){
 		$('.expand-click3').off('click').on('click', toogletext_click3);
 
 		getRunningJob();
+
+		$(document).on('click','[data-toggle-details]', (ev)=>{ //ugly!
+			const $sub = $("[data-details-for-url='"+$(ev.target).attr('data-toggle-details')+"']");
+			console.log("clicked", ev.target,$(ev.target).attr('data-toggle-details'), $sub);
+			if ($sub.is(':visible')) $sub.hide();
+			else $sub.show();
+		});
 	}
 
 
@@ -153,6 +160,8 @@ jQuery(document).ready(function($){
 		getJobStatus(jobId, handleJobStatusResponse);
 	}
 
+	window.startPollingJobStatus = startPollingJobStatus;
+
 	function setRunningJob(jobId) {
 		$.ajax({
 			url: ajaxurl,
@@ -201,11 +210,8 @@ jQuery(document).ready(function($){
 	function handleJobStatusResponse(data) {
 		if (!data) return displayErrorNotice('Failed. No data received. Please try again later.');
 		$('.crawl-summary').html(generateStatusHtml(data));
-		$(document).on('click','[data-toggle-details]', (ev)=>{ //ugly!
-			const $sub = $("[data-details-for-url='"+$(ev.target).text()+"']");
-			if ($sub.visible) $sub.hide()
-			else $sub.show();
-		});
+
+
 		if (data.status === 'completed') {
 			finishPolling();
 			setRunningJob('');
@@ -237,21 +243,22 @@ jQuery(document).ready(function($){
 			html += `
 				<tr>
 					<td class="text-right">${u.crawl.index}</td>
-					<td class="url"><div class="ellipsis" data-toggle-details>${u.url}</div></td>
-					<td class="text-center">${displayStatusOf(u.crawl)}</td>
-					<td class="text-center">${displayStatusOf(u.fullCss)}</td>
-					<td class="text-center">${displayStatusOf(u.purifyCss)}</td>
-					<td class="text-center">${displayStatusOf(u.criticalCss)}</td>
+					<td class="url"><div class="ellipsis">${u.url}</div></td>
+					<td class="text-center">${displayStatusOf(u.crawl, u.url)}</td>
+					<td class="text-center">${displayStatusOf(u.fullCss, u.url)}</td>
+					<td class="text-center">${displayStatusOf(u.purifyCss, u.url)}</td>
+					<td class="text-center">${displayStatusOf(u.criticalCss, u.url)}</td>
 				</tr>
 			`;
-			/*if (u.styles && u.styles.cssLinks) {
+
+			if (u.purifyCss && u.purifyCss.errors && u.purifyCss.errors.length > 0) {
 				html += `
 				<tr style="display:none" data-details-for-url="${u.url}">
 					<td></td>
-					<td colspan="5">${generateUrlDetails(u)}</td>
+					<td colspan="5" style="padding-top: 20px; padding-bottom: 20px;">${displayErrorMessages(u.purifyCss.errors)}</td>
 				</tr>
-				`
-			}*/
+				`;
+			}
 		});
 		html += `
 			</table>
@@ -260,16 +267,34 @@ jQuery(document).ready(function($){
 		return html;
 	}
 
-	function displayStatusOf(subprocess) {
+	function displayStatusOf(subprocess, url) {
 		if (!subprocess) return '';
 		if (!subprocess.status) return '';
 		switch (subprocess.status) {
 			case 'processing': return '<span class="dashicons dashicons-admin-generic rotate" style="color: darkcyan"></span>';
 			case 'enqueued': return '<span class="dashicons dashicons-clock" style="color: darkgrey"></span>';
 			case 'failed': return '<span class="dashicons dashicons-no" style="color: indianred"></span>';
-			case 'completed': return '<span class="dashicons dashicons-yes-alt" style="color: forestgreen"></span>';
+			case 'completed':
+				if (subprocess.errors && subprocess.errors.length > 0 ) {
+					return '<span class="warning_icon" style="cursor:pointer" data-toggle-details="'+url+'"></span>';
+				} else {
+					return '<span class="dashicons dashicons-yes-alt" style="color: forestgreen"></span>';
+				}
 		}
 		return '';
+	}
+
+	function displayErrorMessages(errors) {
+		let html = '';
+
+		html += '<span class="warning_icon"></span> Due to CSS syntax errors PurifyCSS couldn\'t parse the code correctly and might have missed some necessary code, as it often ignores the parts after such errors. To fix this, you should correct the syntax in the specified file and try again.';
+
+		for (let error of errors) {
+			console.log(error);
+			html += `<pre title="${error.source}">${error.errorType}: ${error.reason} in ${error.filename} at ${error.line}:${error.column}</pre>`;
+		}
+
+		return html;
 	}
 
 	function displaySuccessNotice(message) {

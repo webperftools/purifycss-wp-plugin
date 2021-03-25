@@ -31,7 +31,9 @@ class Purifycss_Public {
                     $wpHTML = $this->remove_inline_styles($wpHTML);
                     $wpHTML = $this->remove_stylesheet_tags($wpHTML);
                     $wpHTML = $this->add_critical_css($wpHTML);
-                    $wpHTML = $this->add_purifycss_preload($wpHTML);
+                    $wpHTML = $this->criticalcss ?
+                        $this->add_purifycss_preload($wpHTML) :
+                        $this->add_purifycss($wpHTML);
                 }
                 return $wpHTML;
             }, PHP_INT_MAX );

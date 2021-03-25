@@ -85,6 +85,7 @@
 
 table.jobStatus {
    font-size: 16px;
+   width: 800px;
 }
 table.jobStatus td.url {
    width: 400px;
@@ -144,4 +145,14 @@ table.details {
 }
 .text-right {
    text-align: right;
+}
+
+
+.warning_icon {
+   display:inline-block;
+   background: url('../images/warning_icon.svg') no-repeat center center;
+   background-size:contain;
+   width: 20px;
+   height: 20px;
+   cursor: pointer;
 }
