@@ -80,7 +80,8 @@ class Purifycss_Admin {
             "source"   => 'wp-plugin',
             "options"  => [
                 'crawl'             => true,
-                'whitelistCssFiles' => explode("\n",get_option('purifycss_skip_css_files'))
+                'whitelistCssFiles' => explode("\n",get_option('purifycss_skip_css_files')),
+                'skipCriticalCss' => get_option('purifycss_skip_critical_css', 'false') === 'true'
             ],
             "htmlCode" => $_POST['customhtml'],
             "key"      => get_option('purifycss_api_key')
@@ -178,6 +179,8 @@ class Purifycss_Admin {
 		$html           = base64_encode($_POST['customhtml']);
 		$excludeUrls    = $_POST['excludeUrls'];
         $skipCssFiles    = $_POST['skipCssFiles'];
+        $skipCriticalCss = $_POST['skipCriticalCss'];
+
 		$msg 	        = '';
 		// result msg for display in div block
 		$resmsg = '';
@@ -194,6 +197,7 @@ class Purifycss_Admin {
 		update_option( 'purifycss_customhtml', $html );
         update_option( 'purifycss_excluded_urls', $excludeUrls );
         update_option( 'purifycss_skip_css_files', $skipCssFiles );
+        update_option( 'purifycss_skip_critical_css', $skipCriticalCss );
 
 		// save css code
 
@@ -222,7 +226,8 @@ class Purifycss_Admin {
             "source"   => 'wp-plugin',
             "options"  => [
                 'crawlerOptions'    => ['maxdepth' => 0],
-                'whitelistCssFiles' => explode("\n",get_option('purifycss_skip_css_files'))
+                'whitelistCssFiles' => explode("\n",get_option('purifycss_skip_css_files')),
+                'skipCriticalCss' => true
             ],
             "htmlCode" => base64_decode(get_option('purifycss_customhtml')),
             "key"      => get_option('purifycss_api_key')

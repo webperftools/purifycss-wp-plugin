@@ -57,10 +57,10 @@
 
         <p><?=__('PurifyCSS API license key:','purifycss')?> <a href="https://www.webperftools.com/purifycss/purchase-license/" target="_blank"><?=__('Get licence key','purifycss')?></a> </p>
         <p>
-            <input name="api-key" type="text" id="api-key" value="<?=get_option('purifycss_api_key')?>" autocomplete="off" class="regular-text"> 
+            <input name="api-key" type="text" id="api-key" value="<?=get_option('purifycss_api_key')?>" autocomplete="off" class="regular-text">
             <button class="button button-primary " id="activate_button"><?=__('Activate','purifycss')?></button>
         </p>
-        
+
         <p class="expand-click"> <span class="dashicons dashicons-arrow-right"></span> <span class="clickable"><?=__('PurifyCSS options','purifycss')?> </span> </p>
         <div class="d-none pl-5 expand-block">
             <?=__('Custom HTML Code:','purifycss')?> <br/>
@@ -128,6 +128,10 @@
       <textarea class="html_editor" name="" id="purifycss_skip_css_files_text" cols="100" rows="10" autocomplete="off"><?=get_option('purifycss_skip_css_files')?></textarea>
    </div>
 
+   <p>
+      <input name="skipCriticalCss" type="checkbox" id="skipCriticalCss" <?php echo get_option('purifycss_skip_critical_css', 'false') === 'true' ? 'checked' : '';?> autocomplete="off" class="regular-text">
+      <label for="skipCriticalCss">Skip critical CSS</label>
+   </p>
 
     <p>
         <button class="button button-primary" id="save_button"><?=__('Save settings','purifycss')?></button>

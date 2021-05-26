@@ -58,14 +58,16 @@ jQuery(document).ready(function($){
 		}
 		let excludeUrls = $('#purifycss_exclude_urls_text').val();
 		let skipCssFiles = $('#purifycss_skip_css_files_text').val();
+		let skipCriticalCss = document.getElementById('skipCriticalCss').checked;
 
-		sendAjax( {
-			action:'purifycss_savecss',
-			customhtml:customhtml,
-			excludeUrls:excludeUrls,
-			skipCssFiles:skipCssFiles
-		}, (data)=>{
-
+		const params = {
+			action: 'purifycss_savecss',
+			customhtml: customhtml,
+			excludeUrls: excludeUrls,
+			skipCssFiles: skipCssFiles,
+			skipCriticalCss: skipCriticalCss
+		}
+		sendAjax( params , (data)=>{
 			window.scroll({
 				top: 0, 
 				behavior: 'smooth'
@@ -272,7 +274,9 @@ jQuery(document).ready(function($){
 		switch (subprocess.status) {
 			case 'processing': return '<span class="dashicons dashicons-admin-generic rotate" style="color: darkcyan"></span>';
 			case 'enqueued': return '<span class="dashicons dashicons-clock" style="color: darkgrey"></span>';
-			case 'failed': return '<span class="dashicons dashicons-no" style="color: indianred"></span>';
+			case 'failed':
+				const titleAttr = (subprocess.error && subprocess.error.errorMsg) ?  ' title="'+ subprocess.error.errorMsg +'"' : '';
+				return '<span class="dashicons dashicons-no" style="color: indianred" '+titleAttr+'></span>';
 			case 'completed':
 				if (subprocess.errors && subprocess.errors.length > 0 ) {
 					return '<span class="warning_icon" style="cursor:pointer" data-toggle-details="'+url+'"></span>';
